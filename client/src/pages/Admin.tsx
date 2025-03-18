@@ -368,6 +368,16 @@ const Admin = () => {
   const openAddBookingModal = (teacher: Teacher, slot: any) => {
     setSelectedTeacherForBooking(teacher);
     setSelectedSlot(slot);
+    // ตรวจสอบว่ามีข้อมูลผู้ใช้หรือไม่ ถ้าไม่มีให้ดึงข้อมูลก่อนเปิดโมดอล
+    if (users.length === 0) {
+      fetchUsers().then(() => {
+        console.log('โหลดข้อมูลผู้ใช้สำเร็จ', users.length, 'คน');
+      }).catch(err => {
+        console.error('ไม่สามารถโหลดข้อมูลผู้ใช้ได้:', err);
+      });
+    } else {
+      console.log('มีข้อมูลผู้ใช้อยู่แล้ว', users.length, 'คน');
+    }
     setShowAddBookingModal(true);
   };
 
@@ -379,6 +389,8 @@ const Admin = () => {
 
         if (activeTab === 'teachers') {
           await fetchTeachersWithBookings();
+          // ดึงข้อมูลผู้ใช้ทุกครั้งที่โหลดข้อมูลครู เพื่อให้มีข้อมูลพร้อมใช้ในการจอง
+          await fetchUsers();
         } else if (activeTab === 'users') {
           const res = await axios.get('/api/auth/users');
           setUsers(res.data);

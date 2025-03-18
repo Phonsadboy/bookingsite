@@ -113,9 +113,24 @@ router.get('/me', auth, async (req, res) => {
 // Admin route to get all users
 router.get('/users', adminAuth, async (req, res) => {
   try {
+    console.log('กำลังดึงข้อมูลผู้ใช้ทั้งหมดสำหรับแอดมิน (user ID:', req.user.userId, ')');
     const users = await User.find();
+    console.log('พบผู้ใช้ทั้งหมด', users.length, 'คน');
+    
+    // เพิ่มข้อมูล debug
+    if (users.length === 0) {
+      console.log('ไม่พบข้อมูลผู้ใช้ในระบบ');
+    } else {
+      console.log('ตัวอย่างข้อมูลผู้ใช้แรก:', {
+        _id: users[0]._id,
+        username: users[0].username,
+        role: users[0].role
+      });
+    }
+    
     res.json(users);
   } catch (err) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้ทั้งหมด:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
