@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
@@ -28,14 +29,25 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/bookings', require('./routes/bookings'));
 
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, 'client/dist')));
+// เช็คว่ามีโฟลเดอร์ client/dist หรือไม่
+const distPath = path.join(__dirname, 'client/dist');
+const hasClientBuild = fs.existsSync(distPath) && fs.existsSync(path.join(distPath, 'index.html'));
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
-});
+// ถ้ามี frontend build ไฟล์ จึงจะ serve
+if (hasClientBuild) {
+  console.log('Frontend build found, serving static files');
+  app.use(express.static(distPath));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  console.log('No frontend build found, API only mode');
+  // API welcome route
+  app.get('/', (req, res) => {
+    res.json({ message: 'Welcome to BookingAI API. Frontend is not available in this deployment.' });
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
