@@ -117,9 +117,6 @@ const Teachers = () => {
       
       (selectedTeacher?.availableSlots || []).forEach(slot => {
         if (!slot?.day) return;
-        if (!datesMap.has(slot.day)) {
-          datesMap.set(slot.day, []);
-        }
         
         // ตรวจสอบว่าสล็อตนี้มีการจองโดยผู้ใช้หรือไม่
         const booking = bookings.find(b => 
@@ -129,30 +126,50 @@ const Teachers = () => {
           b?.endTime === slot?.endTime
         );
         
-        datesMap.get(slot.day)?.push({
+        // สร้าง slot ใหม่พร้อมข้อมูล booking
+        const slotWithBookingInfo = {
           ...slot,
           isBooked: booking !== undefined,
           bookingStatus: booking?.status,
           bookingId: booking?._id
-        });
+        };
+        
+        // เพิ่ม slot เข้าไปในวันที่ถ้ายังไม่มี Map
+        if (!datesMap.has(slot.day)) {
+          datesMap.set(slot.day, []);
+        }
+        
+        // เพิ่ม slot ลงในวันที่
+        datesMap.get(slot.day)?.push(slotWithBookingInfo);
       });
       
       // เรียงวันที่จากน้อยไปมาก
       const sortedDates = Array.from(datesMap.entries())
-        .map(([date, slots]) => ({
-          date,
-          formattedDate: formatThaiDate(date),
-          slots
-        }))
+        .map(([date, slots]) => {
+          // กรองให้เหลือเฉพาะ slot ที่ยังไม่ถูกจอง (ยกเว้นที่จองโดยผู้ใช้ปัจจุบัน)
+          const filteredSlots = slots.filter(slot => 
+            !slot.isBooked || (slot.isBooked && bookings.some(b => 
+              b._id === slot.bookingId && b.user._id === user?.id
+            ))
+          );
+          
+          return {
+            date,
+            formattedDate: formatThaiDate(date),
+            slots: filteredSlots
+          };
+        })
         .sort((a, b) => {
           const dateA = new Date(a.date);
           const dateB = new Date(b.date);
           return dateA.getTime() - dateB.getTime();
-        });
+        })
+        // กรองเอาเฉพาะวันที่ยังมี slot เหลืออยู่
+        .filter(dateObj => dateObj.slots.length > 0);
       
       setAvailableDates(sortedDates);
     }
-  }, [selectedTeacher, bookings]);
+  }, [selectedTeacher, bookings, user]);
 
   const handleSelectTeacher = (teacher: Teacher) => {
     setSelectedTeacher(teacher);

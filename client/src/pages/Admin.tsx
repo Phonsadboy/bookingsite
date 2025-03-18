@@ -627,7 +627,8 @@ const Admin = () => {
       }
       
       // หากผู้ใช้ที่ถูกอัปเดตเป็นผู้ใช้ปัจจุบัน ให้รีเฟรชข้อมูลผู้ใช้ใน Context ด้วย
-      if (user && userId === user.id) {
+      const currentUser = user; // ตัวแปร user จาก useAuth()
+      if (currentUser && userId === currentUser.id) {
         await refreshUserData();
       }
       
@@ -671,7 +672,8 @@ const Admin = () => {
       setUsers(res.data);
       
       // หากผู้ใช้ที่แก้ไขเป็นผู้ใช้ปัจจุบัน ให้รีเฟรชข้อมูลผู้ใช้ใน Context ด้วย
-      if (user && selectedUser._id === user.id) {
+      const currentUser = user; // ตัวแปร user จาก useAuth()
+      if (currentUser && selectedUser._id === currentUser.id) {
         await refreshUserData();
       }
       
@@ -708,9 +710,20 @@ const Admin = () => {
 
   const handleAddBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUserForBooking || !selectedTeacherForBooking || !selectedSlot) return;
+    if (!selectedUserForBooking || !selectedTeacherForBooking || !selectedSlot) {
+      alert('กรุณาเลือกผู้ใช้ ครู และช่วงเวลาให้ครบถ้วน');
+      return;
+    }
 
     try {
+      console.log('กำลังเพิ่มการจองโดยแอดมิน:', {
+        ผู้ใช้: selectedUserForBooking,
+        ครู: selectedTeacherForBooking._id,
+        วันที่: selectedSlot.day,
+        เวลาเริ่ม: selectedSlot.startTime,
+        เวลาสิ้นสุด: selectedSlot.endTime
+      });
+      
       await axios.post(`/api/bookings`, {
         userId: selectedUserForBooking,
         teacherId: selectedTeacherForBooking._id,
@@ -726,13 +739,22 @@ const Admin = () => {
       const res = await axios.get('/api/bookings/all');
       setBookings(res.data);
       
+      // รีเฟรชข้อมูลผู้ใช้เพื่ออัพเดทจำนวนคอร์สที่เหลือ
+      await fetchUsers();
+      
       setShowAddBookingModal(false);
       setSelectedTeacherForBooking(null);
       setSelectedSlot(null);
       setSelectedUserForBooking('');
+      
+      alert('เพิ่มการจองสำเร็จแล้ว');
     } catch (err: any) {
       console.error('เกิดข้อผิดพลาดในการเพิ่มการจอง:', err);
-      setError('ไม่สามารถเพิ่มการจองได้');
+      if (err.response && err.response.data && err.response.data.msg) {
+        alert(`ไม่สามารถเพิ่มการจองได้: ${err.response.data.msg}`);
+      } else {
+        alert('ไม่สามารถเพิ่มการจองได้ กรุณาตรวจสอบว่าผู้ใช้มีจำนวนครั้งเรียนเพียงพอหรือไม่');
+      }
     }
   };
 
@@ -969,7 +991,7 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 text-white px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 text-white px-4 sm:px-6 lg:px-8 overflow-x-hidden">
       {/* Background animations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -1679,7 +1701,8 @@ const Admin = () => {
                                   await handleUpdateUserLessons(user._id, user.totalLessons + 1);
                                   
                                   // หากผู้ใช้ที่เพิ่มคาบเรียนเป็นผู้ใช้ปัจจุบัน ให้รีเฟรชข้อมูลผู้ใช้ใน Context ด้วย
-                                  if (user && user._id === user.id) {
+                                  const currentUser = user; // ตัวแปร user จาก useAuth()
+                                  if (currentUser && user._id === currentUser.id) {
                                     await refreshUserData();
                                   }
                                 } catch (err) {
@@ -2038,14 +2061,23 @@ const Admin = () => {
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
                   required
                 >
-                  <option value="" className="bg-white text-black">-- เลือกผู้ใช้ --</option>
-                  {users.map(user => (
-                    <option key={user._id} value={user._id} className="bg-white text-black">
-                      {user.name || user.username}
-                    </option>
-                  ))}
+                  <option value="" className="bg-gray-800 text-white">-- เลือกผู้ใช้ --</option>
+                  {users && users.length > 0 ? (
+                    users.map(user => (
+                      <option key={user._id} value={user._id} className="bg-gray-800 text-white">
+                        {user.name || user.username} ({user.totalLessons - user.usedLessons} คาบที่เหลือ)
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled className="bg-gray-800 text-white">ไม่พบข้อมูลผู้ใช้</option>
+                  )}
                 </select>
               </div>
+              {users && users.length === 0 && (
+                <div className="mb-4 text-red-300 text-sm bg-red-500/20 rounded p-2">
+                  ไม่พบรายชื่อผู้ใช้ในระบบ กรุณารีเฟรชหน้าหรือเพิ่มผู้ใช้ก่อนทำการจอง
+                </div>
+              )}
               <div className="flex justify-end space-x-2">
                 <button
                   type="button"
@@ -2057,6 +2089,7 @@ const Admin = () => {
                 <button
                   type="submit"
                   className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg shadow hover:from-pink-600 hover:to-purple-600"
+                  disabled={users.length === 0 || !selectedUserForBooking}
                 >
                   เพิ่มการจอง
                 </button>
