@@ -4,6 +4,17 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 
+// ตรวจสอบว่ามีการตั้งค่า environment variables ที่จำเป็นหรือไม่
+if (!process.env.MONGODB_URI) {
+  console.error('ERROR: MONGODB_URI environment variable is not set');
+  process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error('ERROR: JWT_SECRET environment variable is not set');
+  process.exit(1);
+}
+
 const app = express();
 
 // Middleware
@@ -54,4 +65,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`MongoDB: Connected`);
+  console.log(`JWT_SECRET: ${process.env.JWT_SECRET ? 'Configured' : 'Not configured'}`);
 });

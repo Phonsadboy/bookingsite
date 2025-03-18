@@ -2,8 +2,9 @@ import axios from 'axios';
 
 // สร้าง axios instance พร้อมกับ baseURL
 const api = axios.create({
-  // ตรวจสอบว่า URL ที่ถูกต้องควรเป็นแบบใด
-  baseURL: 'https://web-production-dd29.up.railway.app',
+  // ใช้ relative URL ที่จะทำงานได้ทั้งใน development และ production
+  // ไม่ว่าจะเป็น Railway หรือ hosting อื่นๆ
+  baseURL: '/',
   // เพิ่ม timeout เพื่อให้มีเวลาในการเชื่อมต่อมากขึ้น
   timeout: 10000,
 });
