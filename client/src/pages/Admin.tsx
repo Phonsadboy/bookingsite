@@ -166,7 +166,7 @@ const Admin = () => {
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [selectedTeacherForBooking, setSelectedTeacherForBooking] = useState<Teacher | null>(null);
   const [selectedUserForBooking, setSelectedUserForBooking] = useState<string>('');
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
   const [searchTeacher, setSearchTeacher] = useState('');
   const [searchDate, setSearchDate] = useState('');
@@ -368,16 +368,12 @@ const Admin = () => {
   const openAddBookingModal = (teacher: Teacher, slot: any) => {
     setSelectedTeacherForBooking(teacher);
     setSelectedSlot(slot);
-    // ตรวจสอบว่ามีข้อมูลผู้ใช้หรือไม่ ถ้าไม่มีให้ดึงข้อมูลก่อนเปิดโมดอล
-    if (users.length === 0) {
-      fetchUsers().then(() => {
-        console.log('โหลดข้อมูลผู้ใช้สำเร็จ', users.length, 'คน');
-      }).catch(err => {
-        console.error('ไม่สามารถโหลดข้อมูลผู้ใช้ได้:', err);
-      });
-    } else {
-      console.log('มีข้อมูลผู้ใช้อยู่แล้ว', users.length, 'คน');
-    }
+    
+    // เรียกข้อมูลผู้ใช้ทุกครั้งที่เปิด Modal เพื่อให้แน่ใจว่ามีข้อมูลล่าสุด
+    fetchUsers().then(() => {
+      console.log('จำนวนผู้ใช้ที่โหลดสำหรับ modal จอง:', users.length);
+    });
+    
     setShowAddBookingModal(true);
   };
 
@@ -460,10 +456,54 @@ const Admin = () => {
   // เพิ่มฟังก์ชัน fetchUsers เพื่อดึงข้อมูลผู้ใช้
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('/api/auth/users');
+      console.log('กำลังเรียกข้อมูลผู้ใช้สำหรับรายการการจอง...');
+      
+      // ตรวจสอบก่อนว่ามี token หรือไม่
+      if (!token) {
+        console.error('ไม่พบ token ไม่สามารถดึงข้อมูลผู้ใช้ได้');
+        return;
+      }
+      
+      // ตรวจสอบว่ามีการตั้งค่า Authorization header หรือไม่
+      const currentHeaders = axios.defaults.headers.common['Authorization'];
+      console.log('Authorization header ปัจจุบัน:', currentHeaders ? 'มีค่า' : 'ไม่มีค่า');
+      
+      // ตั้งค่า header โดยตรงใน request
+      const res = await axios.get('/api/auth/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-auth-token': token
+        }
+      });
+      
+      console.log('ได้รับข้อมูลผู้ใช้:', res.data.length, 'คน');
+      if (res.data.length === 0) {
+        console.warn('ไม่พบรายชื่อผู้ใช้ในระบบ');
+      }
       setUsers(res.data);
-    } catch (err) {
+      
+    } catch (err: any) {
       console.error('ไม่สามารถโหลดข้อมูลผู้ใช้ได้:', err);
+      
+      // ตรวจสอบประเภทของข้อผิดพลาด
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          // เกิดข้อผิดพลาดในการตอบกลับจากเซิร์ฟเวอร์
+          console.error('รหัสข้อผิดพลาด:', err.response.status);
+          console.error('ข้อมูลข้อผิดพลาด:', err.response.data);
+        } else if (err.request) {
+          // ไม่ได้รับการตอบกลับจากเซิร์ฟเวอร์
+          console.error('ไม่ได้รับการตอบกลับจากเซิร์ฟเวอร์:', err.request);
+        } else {
+          // มีข้อผิดพลาดอื่นๆ ในการตั้งค่าคำขอ
+          console.error('ข้อผิดพลาดในการตั้งค่าคำขอ:', err.message);
+        }
+      } else {
+        // ข้อผิดพลาดอื่นๆ ที่ไม่ใช่ Axios
+        console.error('ข้อผิดพลาดทั่วไป:', err);
+      }
+      
+      setError('ไม่สามารถโหลดข้อมูลผู้ใช้ได้');
     }
   };
 

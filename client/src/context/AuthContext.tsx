@@ -47,6 +47,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // เพิ่ม x-auth-token header
           axios.defaults.headers.common['x-auth-token'] = token;
           
+          console.log('โหลดข้อมูลผู้ใช้...');
+          console.log('ตั้งค่า Authorization header:', `Bearer ${token.substring(0, 10)}...`);
+          console.log('ตั้งค่า x-auth-token header:', `${token.substring(0, 10)}...`);
+          
           // You would typically have an endpoint to get user data
           // For now, we'll just decode the token or use stored user data
           const userData = JSON.parse(localStorage.getItem('user') || 'null');
@@ -93,11 +97,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setToken(token);
       setUser(user);
+      
+      // ตั้งค่า headers
+      console.log('ล็อกอินสำเร็จ, กำลังตั้งค่า headers...');
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       // เพิ่ม x-auth-token header
       axios.defaults.headers.common['x-auth-token'] = token;
       api.defaults.headers.common['x-auth-token'] = token;
+      
+      console.log('Headers ที่ตั้งค่า:');
+      console.log('- Authorization:', `Bearer ${token.substring(0, 10)}...`);
+      console.log('- x-auth-token:', `${token.substring(0, 10)}...`);
+      
     } catch (error) {
       console.error('Login error', error);
       // ตรวจสอบชนิดของ error และแสดงข้อความที่เหมาะสม

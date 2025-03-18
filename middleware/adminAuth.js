@@ -4,6 +4,12 @@ const User = require('../models/User');
 // Middleware for admin-only routes
 module.exports = function(req, res, next) {
   try {
+    // แสดงข้อมูล debug เพื่อตรวจสอบเฮดเดอร์ทั้งหมด
+    console.log('=== เฮดเดอร์ทั้งหมดที่ได้รับ ===');
+    console.log('Authorization:', req.header('Authorization'));
+    console.log('x-auth-token:', req.header('x-auth-token'));
+    console.log('===========================');
+    
     // ตรวจสอบ token จากทั้งเฮดเดอร์ Authorization และ x-auth-token
     let token;
     
@@ -11,10 +17,12 @@ module.exports = function(req, res, next) {
     const authHeader = req.header('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.replace('Bearer ', '');
+      console.log('ใช้ token จาก Authorization header');
     } 
     // ถ้าไม่มี ให้ตรวจสอบจาก x-auth-token
     else if (req.header('x-auth-token')) {
       token = req.header('x-auth-token');
+      console.log('ใช้ token จาก x-auth-token header');
     }
     
     // ถ้าไม่พบ token จากทั้งสองที่

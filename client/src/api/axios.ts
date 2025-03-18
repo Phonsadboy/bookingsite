@@ -14,7 +14,13 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
+      // เพิ่ม token ในรูปแบบ Bearer token
       config.headers.Authorization = `Bearer ${token}`;
+      
+      // เพิ่ม token ในรูปแบบ x-auth-token สำหรับ API ที่ใช้ middleware adminAuth.js
+      config.headers['x-auth-token'] = token;
+      
+      console.log('Axios Interceptor: ตั้งค่า headers สำหรับคำขอ API');
     }
     return config;
   },
