@@ -65,9 +65,17 @@ const Teachers = () => {
         setLoading(true);
         setError('');
         const res = await axios.get('/api/teachers');
-        setTeachers(res.data);
+        console.log('ข้อมูลครูที่ได้รับ:', res.data);
+        const validTeachers = res.data.filter((teacher: any) => 
+          teacher && 
+          typeof teacher === 'object' && 
+          teacher._id && 
+          typeof teacher.name === 'string'
+        );
+        setTeachers(validTeachers);
         setLoading(false);
       } catch (err) {
+        console.error('เกิดข้อผิดพลาดในการโหลดข้อมูลครู:', err);
         setError('ไม่สามารถโหลดรายชื่อครูได้');
         setLoading(false);
       }
@@ -105,10 +113,10 @@ const Teachers = () => {
         
         // ตรวจสอบว่าสล็อตนี้มีการจองโดยผู้ใช้หรือไม่
         const booking = bookings.find(b => 
-          b.teacher._id === selectedTeacher._id && 
-          b.day === slot.day && 
-          b.startTime === slot.startTime && 
-          b.endTime === slot.endTime
+          b?.teacher?._id === selectedTeacher?._id && 
+          b?.day === slot?.day && 
+          b?.startTime === slot?.startTime && 
+          b?.endTime === slot?.endTime
         );
         
         datesMap.get(slot.day)?.push({
@@ -279,13 +287,13 @@ const Teachers = () => {
                     className="p-6 cursor-pointer"
                     onClick={() => handleSelectTeacher(teacher)}
                   >
-                    <h2 className="text-xl font-semibold mb-2">{teacher.name}</h2>
-                    <p className="text-indigo-200 text-sm mb-4">{teacher.profileDescription}</p>
+                    <h2 className="text-xl font-semibold mb-2">{teacher?.name || 'ไม่ระบุชื่อ'}</h2>
+                    <p className="text-indigo-200 text-sm mb-4">{teacher?.profileDescription || 'ไม่มีคำอธิบาย'}</p>
                     <div className="flex items-center text-xs text-indigo-300">
                       <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <span>{teacher.availableSlots?.length || 0} ช่วงเวลาสอน</span>
+                      <span>{teacher?.availableSlots?.length || 0} ช่วงเวลาสอน</span>
                     </div>
                   </div>
                   
