@@ -1128,7 +1128,7 @@ const Admin = () => {
                                               <svg className="h-3.5 w-3.5 mr-1 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                               </svg>
-                                              <span className="font-medium text-green-200">{bookingDetail.user.name || bookingDetail.user.username}</span>
+                                              <span className="font-medium text-green-200">{bookingDetail.user?.name || bookingDetail.user?.username || 'N/A'}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                               <div>
@@ -1232,7 +1232,7 @@ const Admin = () => {
                           {booking.teacher.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-200">
-                          {booking.user.name || booking.user.username}
+                          {booking.user?.name || booking.user?.username || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-300">
@@ -1301,7 +1301,7 @@ const Admin = () => {
                     {users.map((user) => (
                       <tr key={user._id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.username}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.name || "-"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user?.name || "-"}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.password}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.role === 'admin' ? 'แอดมิน' : 'ผู้ใช้'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.totalLessons}</td>
@@ -1645,7 +1645,7 @@ const Admin = () => {
                   <option value="" className="bg-white text-black">-- เลือกผู้ใช้ --</option>
                   {users.map(user => (
                     <option key={user._id} value={user._id} className="bg-white text-black">
-                      {user.name || user.username}
+                      {user?.name || user?.username || 'N/A'}
                     </option>
                   ))}
                 </select>
