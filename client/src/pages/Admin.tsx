@@ -166,7 +166,7 @@ const Admin = () => {
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [selectedTeacherForBooking, setSelectedTeacherForBooking] = useState<Teacher | null>(null);
   const [selectedUserForBooking, setSelectedUserForBooking] = useState<string>('');
-  const { user, isAuthenticated, token } = useAuth();
+  const { user, isAuthenticated, token, refreshUserData } = useAuth();
   const navigate = useNavigate();
   const [searchTeacher, setSearchTeacher] = useState('');
   const [searchDate, setSearchDate] = useState('');
@@ -184,6 +184,15 @@ const Admin = () => {
   const [showBookingHistoryModal, setShowBookingHistoryModal] = useState(false);
   const [userBookingHistory, setUserBookingHistory] = useState<any>({ bookings: [], summary: null });
   const [loadingBookingHistory, setLoadingBookingHistory] = useState(false);
+  // เพิ่ม state สำหรับระบบจองให้ผู้ใช้แบบใหม่
+  const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
+  const [directBookingStep, setDirectBookingStep] = useState(1); // 1 = เลือกผู้ใช้, 2 = เลือกครู, 3 = เลือกวันเวลา
+  const [selectedUserForDirectBooking, setSelectedUserForDirectBooking] = useState<string>('');
+  const [selectedTeacherForDirectBooking, setSelectedTeacherForDirectBooking] = useState<string>('');
+  const [selectedDateForDirectBooking, setSelectedDateForDirectBooking] = useState<string>('');
+  const [availableSlotsForDirectBooking, setAvailableSlotsForDirectBooking] = useState<Slot[]>([]);
+  const [selectedSlotForDirectBooking, setSelectedSlotForDirectBooking] = useState<Slot | null>(null);
+  const [selectedUserData, setSelectedUserData] = useState<User | null>(null);
 
   // กรองรายชื่อครูตามคำค้นหา
   const filteredTeachers = searchTeacher 
@@ -597,11 +606,36 @@ const Admin = () => {
 
   const handleUpdateUserLessons = async (userId: string, totalLessons: number) => {
     try {
-      await axios.put(`/api/auth/users/${userId}/lessons`, { totalLessons });
+      await axios.put(`/api/auth/users/${userId}`, { totalLessons });
+      
+      // รีเฟรชข้อมูลทันที
       const res = await axios.get('/api/auth/users');
       setUsers(res.data);
-    } catch (err: any) {
-      setError('ไม่สามารถอัพเดทจำนวนบทเรียนได้');
+      
+      // หากมีการเปิดดูประวัติการจองของผู้ใช้อยู่ ให้รีเฟรชข้อมูลด้วย
+      if (showBookingHistoryModal && userBookingHistory.summary && userBookingHistory.summary.userInfo._id === userId) {
+        // ถ้ากำลังแสดงประวัติการจองของผู้ใช้รายนี้อยู่ ให้โหลดข้อมูลใหม่
+        try {
+          setLoadingBookingHistory(true);
+          const response = await axios.get(`/api/bookings/user/${userId}`);
+          setUserBookingHistory(response.data);
+        } catch (err) {
+          console.error('ไม่สามารถโหลดประวัติการจองได้:', err);
+        } finally {
+          setLoadingBookingHistory(false);
+        }
+      }
+      
+      // หากผู้ใช้ที่ถูกอัปเดตเป็นผู้ใช้ปัจจุบัน ให้รีเฟรชข้อมูลผู้ใช้ใน Context ด้วย
+      if (user && userId === user.id) {
+        await refreshUserData();
+      }
+      
+      // แสดงข้อความอัปเดตสำเร็จ
+      alert(`อัปเดตจำนวนครั้งเรียนเป็น ${totalLessons} ครั้งเรียบร้อยแล้ว`);
+    } catch (err) {
+      console.error('เกิดข้อผิดพลาดในการอัปเดตจำนวนครั้งเรียน:', err);
+      setError('ไม่สามารถอัปเดตจำนวนครั้งเรียนได้');
     }
   };
 
@@ -626,29 +660,27 @@ const Admin = () => {
 
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!selectedUser) return;
     
     try {
-      const userData = { ...userFormData };
+      await axios.put(`/api/auth/users/${selectedUser._id}`, userFormData);
       
-      // ส่งข้อมูลไปอัพเดทที่ server
-      await axios.put(`/api/auth/users/${selectedUser._id}`, userData);
-      
-      // ดึงข้อมูลผู้ใช้ทั้งหมดใหม่
+      // รีเฟรชข้อมูลผู้ใช้ทั้งหมด
       const res = await axios.get('/api/auth/users');
       setUsers(res.data);
       
-      // ปิดฟอร์ม และรีเซ็ตข้อมูล
+      // หากผู้ใช้ที่แก้ไขเป็นผู้ใช้ปัจจุบัน ให้รีเฟรชข้อมูลผู้ใช้ใน Context ด้วย
+      if (user && selectedUser._id === user.id) {
+        await refreshUserData();
+      }
+      
       setShowEditUserModal(false);
-      setSelectedUser(null);
-      setUserFormData({
-        username: '',
-        name: '',
-        password: '',
-        role: 'user',
-        totalLessons: 0
-      });
-    } catch (err: any) {
+      setUserFormData({ username: '', name: '', password: '', role: 'user', totalLessons: 0 });
+      
+      // แสดงข้อความสำเร็จ
+      alert('บันทึกการแก้ไขผู้ใช้เรียบร้อยแล้ว');
+    } catch (err) {
       setError('ไม่สามารถแก้ไขข้อมูลผู้ใช้ได้');
     }
   };
@@ -705,9 +737,14 @@ const Admin = () => {
   };
 
   const getFilteredSlots = (teacher: Teacher): Slot[] => {
+    // กรณีที่เลือกแสดงเฉพาะช่วงเวลาที่ว่าง
+    if (statusFilter === 'available') {
+      return teacher.availableSlots.filter(slot => !slot.booking);
+    }
+    
+    // กรณีอื่นๆ
     return teacher.availableSlots.filter(slot => {
       if (statusFilter === 'all') return true;
-      if (statusFilter === 'available') return !slot.booking;
       if (statusFilter === 'booked') return !!slot.booking;
       
       try {
@@ -780,6 +817,111 @@ const Admin = () => {
       console.error('เกิดข้อผิดพลาดในการดึงประวัติการจอง:', err);
       setError('ไม่สามารถดึงประวัติการจองได้');
       setLoadingBookingHistory(false);
+    }
+  };
+
+  // เพิ่มฟังก์ชันเปิด modal จองโดยตรง
+  const openDirectBookingModal = () => {
+    // รีเซ็ตข้อมูลทั้งหมดก่อนเปิด modal
+    setDirectBookingStep(1);
+    setSelectedUserForDirectBooking('');
+    setSelectedTeacherForDirectBooking('');
+    setSelectedDateForDirectBooking('');
+    setAvailableSlotsForDirectBooking([]);
+    setSelectedSlotForDirectBooking(null);
+    setSelectedUserData(null);
+    
+    // โหลดข้อมูลผู้ใช้ใหม่ทุกครั้ง
+    fetchUsers().then(() => {
+      console.log('โหลดข้อมูลผู้ใช้สำหรับการจองโดยตรงเรียบร้อย');
+      setShowDirectBookingModal(true);
+    });
+  };
+
+  // ฟังก์ชันเมื่อเลือกผู้ใช้ในระบบจองโดยตรง
+  const handleSelectUserForDirectBooking = async (userId: string) => {
+    try {
+      setSelectedUserForDirectBooking(userId);
+      
+      // หาข้อมูลผู้ใช้ที่เลือก
+      const userData = users.find(u => u._id === userId);
+      if (userData) {
+        setSelectedUserData(userData);
+      }
+      
+      // เปลี่ยนไปขั้นตอนการเลือกครู
+      setDirectBookingStep(2);
+    } catch (err) {
+      console.error('เกิดข้อผิดพลาดในการเลือกผู้ใช้สำหรับการจองโดยตรง:', err);
+      setError('ไม่สามารถเลือกผู้ใช้ได้');
+    }
+  };
+
+  // ฟังก์ชันเมื่อเลือกครูในระบบจองโดยตรง
+  const handleSelectTeacherForDirectBooking = (teacherId: string) => {
+    setSelectedTeacherForDirectBooking(teacherId);
+    
+    // กรองช่วงเวลาที่ว่างของครูที่เลือก
+    const teacher = teachers.find(t => t._id === teacherId);
+    if (teacher) {
+      const availableSlots = teacher.availableSlots.filter(slot => !slot.booking);
+      setAvailableSlotsForDirectBooking(availableSlots);
+    } else {
+      setAvailableSlotsForDirectBooking([]);
+    }
+    
+    // เปลี่ยนไปขั้นตอนการเลือกวันและเวลา
+    setDirectBookingStep(3);
+  };
+
+  // ฟังก์ชันสร้างข้อมูลวันที่ที่มีตารางว่าง
+  const getAvailableDates = () => {
+    const dates = new Set<string>();
+    availableSlotsForDirectBooking.forEach(slot => {
+      dates.add(slot.day);
+    });
+    return Array.from(dates).sort();
+  };
+
+  // ฟังก์ชันกรองช่วงเวลาตามวันที่เลือก
+  const getAvailableTimeSlotsByDate = (date: string) => {
+    return availableSlotsForDirectBooking
+      .filter(slot => slot.day === date)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  };
+
+  // ฟังก์ชันสำหรับทำการจองโดยตรง
+  const handleCreateDirectBooking = async () => {
+    if (!selectedUserForDirectBooking || !selectedTeacherForDirectBooking || !selectedSlotForDirectBooking) {
+      setError('กรุณาเลือกข้อมูลให้ครบถ้วน');
+      return;
+    }
+    
+    try {
+      // สร้างการจองใหม่
+      await axios.post(`/api/bookings`, {
+        userId: selectedUserForDirectBooking,
+        teacherId: selectedTeacherForDirectBooking,
+        day: selectedSlotForDirectBooking.day,
+        date: selectedSlotForDirectBooking.day,
+        startTime: selectedSlotForDirectBooking.startTime,
+        endTime: selectedSlotForDirectBooking.endTime,
+        status: 'pending'
+      });
+      
+      // รีเฟรชข้อมูลทั้งหมด
+      await fetchTeachersWithBookings();
+      const res = await axios.get('/api/bookings/all');
+      setBookings(res.data);
+      
+      // ปิด modal
+      setShowDirectBookingModal(false);
+      
+      // แสดงข้อความสำเร็จ
+      alert(`สร้างการจองให้ ${selectedUserData?.name || selectedUserData?.username || 'ผู้ใช้'} เรียบร้อยแล้ว`);
+    } catch (err: any) {
+      console.error('เกิดข้อผิดพลาดในการสร้างการจองโดยตรง:', err);
+      setError('ไม่สามารถสร้างการจองได้');
     }
   };
 
@@ -1477,14 +1619,28 @@ const Admin = () => {
 
           {activeTab === 'users' && (
             <>
-              <div className="mb-4 flex justify-between items-center">
+              <div className="mb-4 flex flex-wrap justify-between items-center gap-2">
                 <h2 className="text-2xl font-bold text-white">จัดการผู้ใช้</h2>
-                <button
-                  onClick={() => setShowAddUserModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg shadow-lg hover:from-pink-600 hover:to-purple-600 transition-all"
-                >
-                  เพิ่มผู้ใช้ใหม่
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setShowAddUserModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg shadow-lg hover:from-pink-600 hover:to-purple-600 transition-all flex items-center"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    เพิ่มผู้ใช้ใหม่
+                  </button>
+                  <button
+                    onClick={openDirectBookingModal}
+                    className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-lg shadow-lg hover:from-indigo-600 hover:to-blue-600 transition-all flex items-center"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    จองให้ผู้ใช้โดยตรง
+                  </button>
+                </div>
               </div>
               <div className="bg-white shadow-md rounded-lg p-6">
               <div className="overflow-x-auto">
@@ -1502,31 +1658,59 @@ const Admin = () => {
                   </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                     {users.map((user) => (
-                      <tr key={user._id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.username}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.name || "-"}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.password}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.role === 'admin' ? 'แอดมิน' : 'ผู้ใช้'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.totalLessons}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.usedLessons}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => openEditUserModal(user)}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                แก้ไข
-                              </button>
-                              <button
-                                onClick={() => fetchUserBookingHistory(user._id)}
-                                className="inline-flex items-center px-2 py-1 border border-indigo-500 rounded-md text-xs font-medium text-indigo-300 hover:bg-indigo-800/30 transition-colors"
-                                title="ดูประวัติการจอง"
-                              >
-                                <svg className="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                </svg>
-                                ประวัติ
-                              </button>
+                      <tr key={user._id} className="relative">
+                        {/* เพิ่มตัวเลขแสดงคาบเรียนที่เหลือในมุมขวาบน */}
+                        <div className="absolute top-0 right-0 p-1.5 m-1 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200 shadow-sm">
+                          <span title="จำนวนคาบเรียนที่เหลือ">
+                            {user.totalLessons - user.usedLessons} คาบ
+                          </span>
+                        </div>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.username}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.name || "-"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.password}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.role === 'admin' ? 'แอดมิน' : 'ผู้ใช้'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
+                          <div className="flex items-center">
+                            <span>{user.totalLessons}</span>
+                            <button 
+                              onClick={async () => {
+                                try {
+                                  // เพิ่มจำนวนคาบเรียนอีก 1 คาบ
+                                  await handleUpdateUserLessons(user._id, user.totalLessons + 1);
+                                  
+                                  // หากผู้ใช้ที่เพิ่มคาบเรียนเป็นผู้ใช้ปัจจุบัน ให้รีเฟรชข้อมูลผู้ใช้ใน Context ด้วย
+                                  if (user && user._id === user.id) {
+                                    await refreshUserData();
+                                  }
+                                } catch (err) {
+                                  console.error('ไม่สามารถเพิ่มจำนวนคาบเรียนได้:', err);
+                                  setError('ไม่สามารถเพิ่มจำนวนคาบเรียนได้');
+                                }
+                              }}
+                              className="p-1 rounded-full text-blue-600 hover:bg-blue-100"
+                              title="เพิ่มคาบเรียน"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.usedLessons}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => openEditUserModal(user)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              แก้ไข
+                            </button>
+                            <button
+                              onClick={() => fetchUserBookingHistory(user._id)}
+                              className="text-green-600 hover:text-green-900"
+                            >
+                              ประวัติการจอง
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -2077,6 +2261,120 @@ const Admin = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* เพิ่ม Modal สำหรับระบบจองให้ผู้ใช้แบบใหม่ */}
+      {showDirectBookingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-black">จองโดยตรง</h3>
+              <button
+                onClick={() => setShowDirectBookingModal(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="mb-4">
+              <label htmlFor="selectedUser" className="block text-sm font-medium text-black">
+                เลือกผู้ใช้:
+              </label>
+              <select
+                id="selectedUser"
+                value={selectedUserForDirectBooking}
+                onChange={(e) => handleSelectUserForDirectBooking(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-2 bg-white text-gray-900"
+              >
+                <option value="" className="bg-white text-black">-- เลือกผู้ใช้ --</option>
+                {users.map(user => (
+                  <option key={user._id} value={user._id} className="bg-white text-black">
+                    {user.name || user.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {selectedUserData && (
+              <div className="mb-4">
+                <label htmlFor="selectedTeacher" className="block text-sm font-medium text-black">
+                  เลือกครู:
+                </label>
+                <select
+                  id="selectedTeacher"
+                  value={selectedTeacherForDirectBooking}
+                  onChange={(e) => handleSelectTeacherForDirectBooking(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-2 bg-white text-gray-900"
+                >
+                  <option value="" className="bg-white text-black">-- เลือกครู --</option>
+                  {teachers.map(teacher => (
+                    <option key={teacher._id} value={teacher._id} className="bg-white text-black">
+                      {teacher.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {selectedTeacherForDirectBooking && (
+              <div className="mb-4">
+                <label htmlFor="selectedDate" className="block text-sm font-medium text-black">
+                  เลือกวันที่:
+                </label>
+                <input
+                  type="date"
+                  id="selectedDate"
+                  value={selectedDateForDirectBooking}
+                  onChange={(e) => setSelectedDateForDirectBooking(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-2 bg-white text-gray-900"
+                />
+              </div>
+            )}
+            {availableSlotsForDirectBooking.length > 0 && (
+              <div className="mb-4">
+                <label htmlFor="selectedSlot" className="block text-sm font-medium text-black">
+                  เลือกช่วงเวลา:
+                </label>
+                <select
+                  id="selectedSlot"
+                  value={selectedSlotForDirectBooking ? selectedSlotForDirectBooking.startTime : ''}
+                  onChange={(e) => {
+                    const selectedSlot = availableSlotsForDirectBooking.find(slot => slot.startTime === e.target.value);
+                    if (selectedSlot) {
+                      setSelectedSlotForDirectBooking(selectedSlot);
+                    } else {
+                      setSelectedSlotForDirectBooking(null);
+                    }
+                  }}
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-2 bg-white text-gray-900"
+                >
+                  <option value="" className="bg-white text-black">-- เลือกช่วงเวลา --</option>
+                  {availableSlotsForDirectBooking.map(slot => (
+                    <option key={slot.startTime} value={slot.startTime} className="bg-white text-black">
+                      {slot.startTime} - {slot.endTime}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowDirectBookingModal(false)}
+                className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateDirectBooking}
+                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg shadow hover:from-pink-600 hover:to-purple-600"
+              >
+                ยืนยัน
+              </button>
             </div>
           </div>
         </div>

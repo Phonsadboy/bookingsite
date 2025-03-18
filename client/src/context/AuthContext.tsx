@@ -17,6 +17,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -133,13 +134,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     delete api.defaults.headers.common['x-auth-token'];
   };
 
+  const refreshUserData = async () => {
+    if (!token) return;
+    
+    try {
+      console.log('กำลังรีเฟรชข้อมูลผู้ใช้...');
+      
+      // เรียก API เพื่อดึงข้อมูลผู้ใช้ปัจจุบัน
+      const res = await api.get('/api/auth/me');
+      const userData = res.data;
+      
+      if (!userData) {
+        throw new Error('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
+      }
+      
+      // บันทึกข้อมูลล่าสุดลงใน localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // อัปเดต state
+      setUser(userData);
+      
+      console.log('รีเฟรชข้อมูลผู้ใช้สำเร็จ:', userData);
+    } catch (error) {
+      console.error('เกิดข้อผิดพลาดในการรีเฟรชข้อมูลผู้ใช้:', error);
+    }
+  };
+
   const value = {
     user,
     token,
     isAuthenticated: !!user,
     isLoading,
     login,
-    logout
+    logout,
+    refreshUserData
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
