@@ -1,0 +1,170 @@
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
+
+// Login route
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    // Check if user exists
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Validate password โดยการเทียบโดยตรง ไม่ต้องใช้ bcrypt
+    if (password !== user.password) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Create and return JWT token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        totalLessons: user.totalLessons,
+        usedLessons: user.usedLessons
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin route to create new user
+router.post('/register', adminAuth, async (req, res) => {
+  try {
+    const { username, password, totalLessons, name } = req.body;
+
+    // Check if user already exists
+    let user = await User.findOne({ username });
+    if (user) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create new user
+    user = new User({
+      username,
+      password,  // ไม่ต้องแฮชรหัสผ่าน
+      name: name || '',
+      totalLessons: totalLessons || 0
+    });
+
+    await user.save();
+
+    res.status(201).json({
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        totalLessons: user.totalLessons
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get current user profile
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-password');
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin route to get all users
+router.get('/users', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin route to get a single user by ID
+router.get('/users/:userId', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin route to update user lessons
+router.put('/users/:userId/lessons', adminAuth, async (req, res) => {
+  try {
+    const { totalLessons } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.userId,
+      { totalLessons },
+      { new: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin route to update user details
+router.put('/users/:userId', adminAuth, async (req, res) => {
+  try {
+    const { username, name, totalLessons, role, password } = req.body;
+    const updateData = { username, name, totalLessons, role };
+    
+    // อัพเดตรหัสผ่านโดยตรง ไม่ต้องแฮช
+    if (password) {
+      updateData.password = password;
+    }
+    
+    // กรองข้อมูลที่เป็น undefined ออก
+    Object.keys(updateData).forEach(key => 
+      updateData[key] === undefined && delete updateData[key]
+    );
+    
+    const user = await User.findByIdAndUpdate(
+      req.params.userId,
+      updateData,
+      { new: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+module.exports = router;
