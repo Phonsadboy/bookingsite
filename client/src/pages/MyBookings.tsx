@@ -127,6 +127,9 @@ const MyBookings = () => {
 
   // กรองการจองตามหลายเงื่อนไข
   const filteredBookings = bookings.filter(booking => {
+    // ตรวจสอบว่า booking.teacher มีอยู่จริงหรือไม่
+    if (!booking.teacher) return false;
+    
     // กรองตามแท็บสถานะ
     const statusMatch = activeTab === 'all' || booking.status === activeTab;
     
@@ -142,6 +145,9 @@ const MyBookings = () => {
 
   // จัดกลุ่มการจองตามครู
   const groupedByTeacher = filteredBookings.reduce((acc, booking) => {
+    // ตรวจสอบว่า booking.teacher มีอยู่จริง
+    if (!booking.teacher || !booking.teacher._id) return acc;
+    
     const teacherId = booking.teacher._id;
     if (!acc[teacherId]) {
       acc[teacherId] = {
@@ -373,11 +379,13 @@ const MyBookings = () => {
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      navigate(`/teachers/${booking.teacher._id}`);
+                                      if (booking.teacher && booking.teacher._id) {
+                                        navigate(`/teachers/${booking.teacher._id}`);
+                                      }
                                     }}
                                     className="text-sm text-indigo-300 font-medium hover:text-indigo-200 flex items-center transition-colors"
                                   >
-                                    ครู{booking.teacher.name}
+                                    {booking.teacher && booking.teacher.name ? `ครู${booking.teacher.name}` : 'ไม่ระบุชื่อครู'}
                                     <svg className="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                     </svg>

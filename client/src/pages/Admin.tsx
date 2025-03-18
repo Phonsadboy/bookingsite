@@ -251,10 +251,22 @@ const Admin = () => {
       
       // เพิ่มข้อมูลการจองลงในช่วงเวลาของครู
       const updatedTeachers = teachersData.map((teacher: Teacher) => {
+        // ตรวจสอบว่า teacher มีข้อมูลที่ถูกต้อง
+        if (!teacher || !teacher._id || !teacher.name) {
+          console.error('พบข้อมูลครูที่ไม่สมบูรณ์:', teacher);
+          return null; // ข้ามครูที่ข้อมูลไม่สมบูรณ์
+        }
+        
         const updatedSlots = teacher.availableSlots.map(slot => {
+          // ตรวจสอบว่า slot มีข้อมูลที่ถูกต้อง
+          if (!slot || !slot.day || !slot.startTime || !slot.endTime) {
+            console.error('พบข้อมูล slot ที่ไม่ถูกต้อง:', slot);
+            return slot;
+          }
+          
           // ค้นหาการจองที่ตรงกับครูและช่วงเวลานี้ที่ไม่ยกเลิก
           const booking = bookingsData.find((b: Booking) => 
-            b.teacher._id === teacher._id && 
+            b && b.teacher && b.teacher._id === teacher._id && 
             b.day === slot.day && 
             b.startTime === slot.startTime && 
             b.endTime === slot.endTime &&
@@ -271,8 +283,11 @@ const Admin = () => {
         return { ...teacher, availableSlots: updatedSlots };
       });
       
-      console.log('อัพเดทข้อมูลครูเรียบร้อย:', updatedTeachers.length, 'คน');
-      setTeachers(updatedTeachers);
+      // กรองครูที่ข้อมูลไม่สมบูรณ์ออก (ข้อมูลที่เป็น null)
+      const filteredTeachers = updatedTeachers.filter(teacher => teacher !== null);
+      
+      console.log('อัพเดทข้อมูลครูเรียบร้อย:', filteredTeachers.length, 'คน');
+      setTeachers(filteredTeachers);
       setBookings(bookingsData);
       setLoading(false);
     } catch (err) {
@@ -791,18 +806,25 @@ const Admin = () => {
                   <tbody className="divide-y divide-white/10">
                       {filteredTeachers.length > 0 ? (
                         filteredTeachers.map((teacher) => {
+                          // ตรวจสอบว่า teacher มีข้อมูลที่ถูกต้อง
+                          if (!teacher || !teacher._id || !teacher.name) {
+                            console.error('พบข้อมูลครูที่ไม่สมบูรณ์:', teacher);
+                            return null; // ข้ามครูที่ข้อมูลไม่สมบูรณ์
+                          }
+                          
                           // คำนวณจำนวนการจองทั้งหมดของครู
-                          const bookedSlots = teacher.availableSlots.filter(slot => slot.booking).length;
-                          const totalSlots = teacher.availableSlots.length;
+                          const availableSlots = teacher.availableSlots || [];
+                          const bookedSlots = availableSlots.filter(slot => slot && slot.booking).length;
+                          const totalSlots = availableSlots.length;
                           
                           return (
                             <tr key={teacher._id} className="hover:bg-white/5">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                          {teacher.name}
-                        </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                                {teacher.name || 'ไม่ระบุชื่อ'}
+                              </td>
                               <td className="px-6 py-4 text-sm text-indigo-200 max-w-xs truncate">
-                          {teacher.profileDescription}
-                        </td>
+                                {teacher.profileDescription || 'ไม่มีคำอธิบาย'}
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-200">
                                 {totalSlots} ช่วงเวลา
                               </td>
