@@ -24,7 +24,8 @@ const createAdmin = async () => {
         password: hashedPassword,
         role: 'admin',
         totalLessons: 999, // จำนวนบทเรียนทั้งหมด
-        usedLessons: 0
+        usedLessons: 0,
+        email: 'admin@example.com'
       });
 
       await newAdmin.save();

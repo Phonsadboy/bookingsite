@@ -9,19 +9,27 @@ const adminAuth = require('../middleware/adminAuth');
 // Login route
 router.post('/login', async (req, res) => {
   try {
+    console.log('Login attempt:', req.body);
     const { username, password } = req.body;
     
     // Check if user exists
     const user = await User.findOne({ username });
     if (!user) {
+      console.log('User not found:', username);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    console.log('User found:', user.username);
+    console.log('Password comparison:', password, user.password);
+    
     // Validate password โดยการเทียบโดยตรง ไม่ต้องใช้ bcrypt
     if (password !== user.password) {
+      console.log('Password mismatch');
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    console.log('Login successful');
+    
     // Create and return JWT token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
@@ -41,6 +49,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('Server error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
