@@ -177,6 +177,9 @@ const Admin = () => {
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
   const [newBookingsCount, setNewBookingsCount] = useState<number>(0);
   const [lastCheck, setLastCheck] = useState<Date>(new Date());
+  // เพิ่ม state สำหรับควบคุมการรีเฟรชอัตโนมัติ
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<string>('ยังไม่ได้รีเฟรช');
 
   // กรองรายชื่อครูตามคำค้นหา
   const filteredTeachers = searchTeacher 
@@ -397,19 +400,27 @@ const Admin = () => {
     if (isAuthenticated && user?.role === 'admin' && activeTab === 'teachers') {
       fetchTeachersWithBookings();
       
-      // ตั้งเวลาให้โหลดข้อมูลทุกๆ 10 วินาที
-      const intervalId = setInterval(() => {
-        if (activeTab === 'teachers') {
-          fetchTeachersWithBookings();
-        }
-      }, 10000); // 10 วินาที
+      // ตั้งเวลาให้โหลดข้อมูลทุกๆ 10 วินาที เฉพาะเมื่อเปิดใช้การรีเฟรชอัตโนมัติ
+      let intervalId: NodeJS.Timeout | null = null;
+      
+      if (autoRefresh) {
+        intervalId = setInterval(() => {
+          if (activeTab === 'teachers') {
+            fetchTeachersWithBookings();
+            const now = new Date();
+            setLastRefreshTime(
+              `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+            );
+          }
+        }, 30000); // 30 วินาที
+      }
       
       // ทำความสะอาดเมื่อ component unmount
       return () => {
-        clearInterval(intervalId);
+        if (intervalId) clearInterval(intervalId);
       };
     }
-  }, [isAuthenticated, user, activeTab]);
+  }, [isAuthenticated, user, activeTab, autoRefresh]);
 
   // เพิ่ม useEffect เพื่อโหลดข้อมูลการจองเมื่อผู้ใช้กลับมาที่แท็บ
   useEffect(() => {
@@ -675,6 +686,19 @@ const Admin = () => {
     }
   };
 
+  // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูลแบบแมนนวล
+  const handleManualRefresh = async () => {
+    try {
+      await fetchTeachersWithBookings();
+      const now = new Date();
+      setLastRefreshTime(
+        `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+      );
+    } catch (err) {
+      console.error('เกิดข้อผิดพลาดในการรีเฟรชข้อมูล:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800">
@@ -799,16 +823,45 @@ const Admin = () => {
                         </svg>
                       </div>
                     </div>
-                <button
-                  onClick={() => setShowAddTeacherModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors duration-200"
-                >
-                  <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  เพิ่มครูใหม่
-                </button>
-              </div>
+                    {/* ปุ่มรีเฟรชข้อมูล */}
+                    <button
+                      onClick={handleManualRefresh}
+                      className={`inline-flex items-center px-3 py-2 border border-white/20 rounded-md text-sm font-medium ${loading ? 'bg-indigo-900/50 text-indigo-300' : 'text-white hover:bg-white/5'}`}
+                      disabled={loading}
+                    >
+                      <svg className={`mr-1.5 h-4 w-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      รีเฟรช
+                    </button>
+                    {/* ตัวเลือกรีเฟรชอัตโนมัติ */}
+                    <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1">
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={autoRefresh}
+                          onChange={() => setAutoRefresh(!autoRefresh)}
+                        />
+                        <div className={`relative w-10 h-5 ${autoRefresh ? 'bg-indigo-600' : 'bg-white/20'} peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
+                        <span className="ml-2 text-xs text-white">{autoRefresh ? 'รีเฟรชอัตโนมัติ' : 'รีเฟรชเอง'}</span>
+                      </label>
+                    </div>
+                    {lastRefreshTime !== 'ยังไม่ได้รีเฟรช' && (
+                      <div className="text-xs text-indigo-300">
+                        รีเฟรชล่าสุด: {lastRefreshTime}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setShowAddTeacherModal(true)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors duration-200"
+                    >
+                      <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      เพิ่มครูใหม่
+                    </button>
+                  </div>
                 </div>
                 
               <div className="overflow-x-auto">
