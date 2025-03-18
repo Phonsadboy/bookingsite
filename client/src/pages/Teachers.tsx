@@ -70,7 +70,8 @@ const Teachers = () => {
           teacher && 
           typeof teacher === 'object' && 
           teacher._id && 
-          typeof teacher.name === 'string'
+          typeof teacher.name === 'string' &&
+          Array.isArray(teacher.availableSlots)
         );
         setTeachers(validTeachers);
         setLoading(false);
@@ -91,7 +92,15 @@ const Teachers = () => {
         try {
           const res = await axios.get('/api/bookings/my-bookings');
           console.log('ข้อมูลการจองของผู้ใช้:', res.data);
-          setBookings(res.data);
+          const validBookings = res.data.filter((booking: any) => 
+            booking && 
+            typeof booking === 'object' && 
+            booking._id && 
+            booking.teacher && 
+            booking.teacher._id && 
+            booking.teacher.name
+          );
+          setBookings(validBookings);
         } catch (err) {
           console.error('ไม่สามารถโหลดข้อมูลการจองได้', err);
         }
@@ -106,7 +115,8 @@ const Teachers = () => {
       // จัดรูปแบบและจัดกลุ่มวันที่มีคาบเรียนสำหรับครูที่เลือก
       const datesMap = new Map<string, any[]>();
       
-      selectedTeacher.availableSlots.forEach(slot => {
+      (selectedTeacher?.availableSlots || []).forEach(slot => {
+        if (!slot?.day) return;
         if (!datesMap.has(slot.day)) {
           datesMap.set(slot.day, []);
         }
@@ -151,7 +161,7 @@ const Teachers = () => {
   };
 
   const handleBookSlot = async (day: string, startTime: string, endTime: string) => {
-    if (!selectedTeacher) return;
+    if (!selectedTeacher?._id) return;
     
     setBookingError('');
     
@@ -167,7 +177,9 @@ const Teachers = () => {
       console.log('จองสำเร็จ:', res.data);
       
       // เพิ่มการจองใหม่เข้าไปในรายการจอง
-      setBookings(prev => [...prev, res.data]);
+      if (res.data) {
+        setBookings(prev => [...prev, res.data]);
+      }
       
       setBookingSuccess(true);
       

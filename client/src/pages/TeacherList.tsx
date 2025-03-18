@@ -56,9 +56,19 @@ const TeacherList = () => {
     const fetchTeachers = async () => {
       try {
         const res = await axios.get('/api/teachers');
-        setTeachers(res.data);
+        console.log('ข้อมูลครูที่ได้รับ:', res.data);
+        // กรองข้อมูลที่ไม่ถูกต้อง
+        const validTeachers = res.data.filter((teacher: any) => 
+          teacher && 
+          typeof teacher === 'object' && 
+          teacher._id && 
+          typeof teacher.name === 'string' &&
+          Array.isArray(teacher.availableSlots)
+        );
+        setTeachers(validTeachers);
         setLoading(false);
       } catch (err: any) {
+        console.error('เกิดข้อผิดพลาดในการโหลดข้อมูลครู:', err);
         setError('เกิดข้อผิดพลาดในการโหลดข้อมูลครู');
         setLoading(false);
       }
@@ -68,12 +78,14 @@ const TeacherList = () => {
   }, []);
 
   const filteredTeachers = teachers.filter(teacher => {
+    if (!teacher || !teacher.name || !teacher.profileDescription) return false;
+    
     const matchesSearch = searchTerm === '' || 
                          teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          teacher.profileDescription.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (selectedDay && selectedDay !== 'all') {
-      const hasAvailabilityOnDay = teacher.availableSlots.some(
+      const hasAvailabilityOnDay = teacher.availableSlots?.some(
         slot => !slot.isBooked && slot.day === selectedDay
       );
       return matchesSearch && hasAvailabilityOnDay;
@@ -84,8 +96,10 @@ const TeacherList = () => {
 
   // Group available slots by day of week for a teacher
   const getAvailableSlotsByDay = (teacher: Teacher) => {
-    const slots = teacher.availableSlots || [];
-    return slots.filter(slot => !slot.isBooked).reduce((acc, slot) => {
+    if (!teacher?.availableSlots) return {};
+    const slots = teacher.availableSlots.filter(slot => !slot?.isBooked);
+    return slots.reduce((acc, slot) => {
+      if (!slot?.day) return acc;
       if (!acc[slot.day]) {
         acc[slot.day] = [];
       }
@@ -97,9 +111,9 @@ const TeacherList = () => {
   const availableDays = Array.from(
     new Set(
       teachers.flatMap(teacher => 
-        teacher.availableSlots
-          .filter(slot => !slot.isBooked)
-          .map(slot => slot.day)
+        (teacher?.availableSlots || [])
+          .filter(slot => !slot?.isBooked)
+          .map(slot => slot?.day)
       )
     )
   ).sort();
@@ -245,7 +259,7 @@ const TeacherList = () => {
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {filteredTeachers.map((teacher, index) => (
                 <div 
-                  key={teacher._id} 
+                  key={teacher?._id || index} 
                   className={`
                     group relative bg-white/10 backdrop-blur-xl overflow-hidden rounded-xl shadow-lg hover:shadow-2xl border border-white/10 transition-all duration-500 
                     transform hover:-translate-y-1 hover:scale-[1.02] transition-opacity ease-in-out duration-700 
@@ -259,19 +273,31 @@ const TeacherList = () => {
                   <div className="relative p-6">
                     <div className="flex items-center">
                       <div className="h-16 w-16 rounded-full bg-gradient-to-r from-indigo-500 to-pink-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                        {teacher.name.charAt(0)}
+                        {(teacher?.name || '?').charAt(0)}
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-pink-400 transition-all duration-300">{teacher.name}</h3>
+                        <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-pink-400 transition-all duration-300">
+                          {teacher?.name || 'ไม่ระบุชื่อ'}
+                        </h3>
                         <div className="flex flex-wrap gap-2 mt-1">
-                          {Array.from(new Set(teacher.availableSlots.filter(slot => !slot.isBooked).map(slot => slot.day))).slice(0, 3).map(day => (
-                            <span key={day} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-900/50 text-indigo-200 border border-indigo-500/30">
-                              {dayTranslation[day] || day}
-                            </span>
-                          ))}
-                          {Array.from(new Set(teacher.availableSlots.filter(slot => !slot.isBooked).map(slot => slot.day))).length > 3 && (
+                          {Array.from(new Set((teacher?.availableSlots || [])
+                            .filter(slot => !slot?.isBooked)
+                            .map(slot => slot?.day)))
+                            .slice(0, 3)
+                            .map(day => (
+                              <span key={day} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-900/50 text-indigo-200 border border-indigo-500/30">
+                                {dayTranslation[day || ''] || day}
+                              </span>
+                            ))}
+                          {Array.from(new Set((teacher?.availableSlots || [])
+                            .filter(slot => !slot?.isBooked)
+                            .map(slot => slot?.day)))
+                            .length > 3 && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-900/50 text-indigo-200 border border-indigo-500/30">
-                              +{Array.from(new Set(teacher.availableSlots.filter(slot => !slot.isBooked).map(slot => slot.day))).length - 3}
+                              +{Array.from(new Set((teacher?.availableSlots || [])
+                                .filter(slot => !slot?.isBooked)
+                                .map(slot => slot?.day)))
+                                .length - 3}
                             </span>
                           )}
                         </div>
@@ -279,7 +305,7 @@ const TeacherList = () => {
                     </div>
                     
                     <div className="mt-6 min-h-[4rem] text-indigo-100 line-clamp-3">
-                      <p>{teacher.profileDescription}</p>
+                      <p>{teacher?.profileDescription || 'ไม่มีคำอธิบาย'}</p>
                     </div>
                     
                     <div className="mt-6 pt-6 border-t border-indigo-500/20">
@@ -289,12 +315,12 @@ const TeacherList = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                           <span className="ml-2 text-sm font-medium">
-                            {teacher.availableSlots.filter(slot => !slot.isBooked).length} เวลาว่าง
+                            {(teacher?.availableSlots || []).filter(slot => !slot?.isBooked).length} เวลาว่าง
                           </span>
                         </div>
                         
                         <Link
-                          to={`/teachers/${teacher._id}`}
+                          to={`/teachers/${teacher?._id || ''}`}
                           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
                         >
                           <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
