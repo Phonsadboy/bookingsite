@@ -20,6 +20,15 @@ interface Booking {
   notes: string;
 }
 
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  totalLessons: number;
+  usedLessons: number;
+}
+
 const ITEMS_PER_PAGE = 6;
 
 const MyBookings = () => {
@@ -33,9 +42,10 @@ const MyBookings = () => {
   const [expandedTeacher, setExpandedTeacher] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const fetchMyBookings = async () => {
+    (async () => {
       if (isAuthenticated) {
         try {
           setLoading(true);
@@ -43,6 +53,11 @@ const MyBookings = () => {
           const res = await axios.get('/api/bookings/my-bookings');
           console.log('ข้อมูลการจองของฉัน:', res.data);
           setBookings(res.data);
+          
+          // ดึงข้อมูลผู้ใช้เพื่อแสดงจำนวนคาบที่เหลือ
+          const userRes = await axios.get('/api/auth/me');
+          setUser(userRes.data);
+          
           setLoading(false);
         } catch (err) {
           console.error('ไม่สามารถโหลดข้อมูลการจองได้', err);
@@ -50,10 +65,8 @@ const MyBookings = () => {
           setLoading(false);
         }
       }
-    };
-
-    fetchMyBookings();
-  }, [isAuthenticated]);
+    })();
+  }, [isAuthenticated, navigate]);
 
   // รีเซ็ตหน้าเมื่อมีการเปลี่ยนแท็บหรือค้นหา
   useEffect(() => {
@@ -278,6 +291,43 @@ const MyBookings = () => {
             >
               เสร็จสิ้น
             </button>
+          </div>
+        </div>
+
+        {/* เพิ่มการแสดงจำนวนคาบเรียนที่ด้านบนก่อนตารางการจอง */}
+        <div className="my-6 bg-white/10 backdrop-blur-lg rounded-xl shadow-lg border border-white/10 p-6">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-white">การจองของฉัน</h1>
+            
+            <div className="mt-4 md:mt-0 flex space-x-4">
+              <div className="bg-white/5 p-4 rounded-lg border border-white/10 text-center">
+                <p className="text-sm text-indigo-300">คาบเรียนทั้งหมด</p>
+                <p className="text-2xl font-bold text-white">{user?.totalLessons || 0}</p>
+              </div>
+              <div className="bg-white/5 p-4 rounded-lg border border-white/10 text-center">
+                <p className="text-sm text-indigo-300">ใช้ไปแล้ว</p>
+                <p className="text-2xl font-bold text-white">{user?.usedLessons || 0}</p>
+              </div>
+              <div className="bg-white/5 p-4 rounded-lg border border-indigo-500/20 text-center">
+                <p className="text-sm text-indigo-300">คงเหลือ</p>
+                <p className="text-2xl font-bold text-white">{(user?.totalLessons || 0) - (user?.usedLessons || 0)}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <div className="w-full bg-white/5 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full" 
+                style={{ 
+                  width: `${user?.totalLessons ? (user.usedLessons / user.totalLessons) * 100 : 0}%` 
+                }}
+              ></div>
+            </div>
+            <div className="flex justify-between mt-1 text-xs text-indigo-300">
+              <span>0</span>
+              <span>{user?.totalLessons || 0} คาบ</span>
+            </div>
           </div>
         </div>
 

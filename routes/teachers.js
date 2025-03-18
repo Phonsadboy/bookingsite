@@ -7,9 +7,15 @@ const adminAuth = require('../middleware/adminAuth');
 // Get all teachers
 router.get('/', async (req, res) => {
   try {
-    const teachers = await Teacher.find();
+    // ใช้ lean() เพื่อลดขนาดข้อมูลและเพิ่มประสิทธิภาพ
+    const teachers = await Teacher.find()
+      .select('name profileDescription availableSlots')
+      .lean();
+    
+    // ส่งข้อมูลในรูปแบบที่มีขนาดเล็กลง
     res.json(teachers);
   } catch (err) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูลครูทั้งหมด:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -18,11 +24,25 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     console.log('กำลังดึงข้อมูลครู:', req.params.id);
-    const teacher = await Teacher.findById(req.params.id);
+    
+    // ใช้ lean() และ select เพื่อเพิ่มประสิทธิภาพ
+    const teacher = await Teacher.findById(req.params.id)
+      .select('name profileDescription availableSlots')
+      .lean();
     
     if (!teacher) {
       console.log('ไม่พบข้อมูลครู:', req.params.id);
       return res.status(404).json({ message: 'Teacher not found' });
+    }
+    
+    // ตรวจสอบและจัดเรียงช่วงเวลา เพื่อลดการทำงานฝั่ง client
+    if (teacher.availableSlots && Array.isArray(teacher.availableSlots)) {
+      // จัดเรียงตามวันและเวลา
+      teacher.availableSlots.sort((a, b) => {
+        const dateCompare = a.day.localeCompare(b.day);
+        if (dateCompare !== 0) return dateCompare;
+        return a.startTime.localeCompare(b.startTime);
+      });
     }
     
     console.log('ดึงข้อมูลครูสำเร็จ:', teacher.name, 'จำนวนช่วงเวลา:', teacher.availableSlots?.length || 0);

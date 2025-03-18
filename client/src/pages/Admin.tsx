@@ -180,6 +180,10 @@ const Admin = () => {
   // เพิ่ม state สำหรับควบคุมการรีเฟรชอัตโนมัติ
   const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<string>('ยังไม่ได้รีเฟรช');
+  // เพิ่ม state สำหรับการแสดงโมดอลประวัติการจอง
+  const [showBookingHistoryModal, setShowBookingHistoryModal] = useState(false);
+  const [userBookingHistory, setUserBookingHistory] = useState<any>({ bookings: [], summary: null });
+  const [loadingBookingHistory, setLoadingBookingHistory] = useState(false);
 
   // กรองรายชื่อครูตามคำค้นหา
   const filteredTeachers = searchTeacher 
@@ -696,6 +700,21 @@ const Admin = () => {
       );
     } catch (err) {
       console.error('เกิดข้อผิดพลาดในการรีเฟรชข้อมูล:', err);
+    }
+  };
+
+  // เพิ่มฟังก์ชันสำหรับดึงประวัติการจองของผู้ใช้
+  const fetchUserBookingHistory = async (userId: string) => {
+    try {
+      setLoadingBookingHistory(true);
+      const res = await axios.get(`/api/bookings/user/${userId}`);
+      setUserBookingHistory(res.data);
+      setShowBookingHistoryModal(true);
+      setLoadingBookingHistory(false);
+    } catch (err) {
+      console.error('เกิดข้อผิดพลาดในการดึงประวัติการจอง:', err);
+      setError('ไม่สามารถดึงประวัติการจองได้');
+      setLoadingBookingHistory(false);
     }
   };
 
@@ -1433,6 +1452,16 @@ const Admin = () => {
                               >
                                 แก้ไข
                               </button>
+                              <button
+                                onClick={() => fetchUserBookingHistory(user._id)}
+                                className="inline-flex items-center px-2 py-1 border border-indigo-500 rounded-md text-xs font-medium text-indigo-300 hover:bg-indigo-800/30 transition-colors"
+                                title="ดูประวัติการจอง"
+                              >
+                                <svg className="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                ประวัติ
+                              </button>
                           </div>
                         </td>
                       </tr>
@@ -1785,6 +1814,161 @@ const Admin = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* โมดอลแสดงประวัติการจอง */}
+      {showBookingHistoryModal && userBookingHistory.summary && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-black opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-semibold text-white flex items-center">
+                    <svg className="mr-2 h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    ประวัติการจองของ {userBookingHistory.summary.userInfo.name}
+                  </h3>
+                  <button
+                    onClick={() => setShowBookingHistoryModal(false)}
+                    className="text-white hover:text-gray-300 focus:outline-none"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* ส่วนแสดงข้อมูลสรุป */}
+                <div className="bg-white/10 rounded-lg p-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                      <p className="text-sm text-indigo-300">ทั้งหมด</p>
+                      <p className="text-2xl font-bold text-white">{userBookingHistory.summary.total}</p>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-yellow-500/20">
+                      <p className="text-sm text-yellow-300">รอดำเนินการ</p>
+                      <p className="text-2xl font-bold text-white">{userBookingHistory.summary.pending}</p>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-green-500/20">
+                      <p className="text-sm text-green-300">ยืนยันแล้ว</p>
+                      <p className="text-2xl font-bold text-white">{userBookingHistory.summary.confirmed}</p>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-blue-500/20">
+                      <p className="text-sm text-blue-300">เสร็จสิ้น</p>
+                      <p className="text-2xl font-bold text-white">{userBookingHistory.summary.completed}</p>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-red-500/20">
+                      <p className="text-sm text-red-300">ยกเลิก</p>
+                      <p className="text-2xl font-bold text-white">{userBookingHistory.summary.cancelled}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-indigo-200">
+                      <p className="text-sm">จำนวนคาบทั้งหมด: <span className="font-semibold text-white">{userBookingHistory.summary.userInfo.totalLessons}</span></p>
+                      <p className="text-sm">ใช้ไปแล้ว: <span className="font-semibold text-white">{userBookingHistory.summary.userInfo.usedLessons}</span></p>
+                      <p className="text-sm">คงเหลือ: <span className="font-semibold text-white">{userBookingHistory.summary.userInfo.totalLessons - userBookingHistory.summary.userInfo.usedLessons}</span></p>
+                    </div>
+                    <div>
+                      <button
+                        onClick={() => handleUpdateUserLessons(userBookingHistory.summary.userInfo._id, 
+                          parseInt(prompt('กรุณาระบุจำนวนคาบเรียนใหม่', userBookingHistory.summary.userInfo.totalLessons.toString()) || '0'))}
+                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 rounded-md text-white text-sm"
+                      >
+                        อัพเดทจำนวนคาบ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ตารางแสดงประวัติการจอง */}
+                <div className="bg-white/10 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-white/10">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">ครู</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">วันที่</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">เวลา</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">สถานะ</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">จองเมื่อ</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-indigo-300 uppercase">จัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/10">
+                        {userBookingHistory.bookings.length > 0 ? (
+                          userBookingHistory.bookings.map((booking: any) => (
+                            <tr key={booking._id} className="hover:bg-white/5">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-white">
+                                {booking.teacher?.name || 'ไม่ระบุ'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                                {booking.day}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                                {booking.startTime} - {booking.endTime}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                <span className={`px-2 py-1 rounded-full text-xs
+                                  ${booking.status === 'pending' ? 'bg-yellow-900/30 text-yellow-300' : ''}
+                                  ${booking.status === 'confirmed' ? 'bg-green-900/30 text-green-300' : ''}
+                                  ${booking.status === 'completed' ? 'bg-blue-900/30 text-blue-300' : ''}
+                                  ${booking.status === 'cancelled' ? 'bg-red-900/30 text-red-300' : ''}
+                                `}>
+                                  {booking.status === 'pending' && 'รอดำเนินการ'}
+                                  {booking.status === 'confirmed' && 'ยืนยันแล้ว'}
+                                  {booking.status === 'completed' && 'เสร็จสิ้น'}
+                                  {booking.status === 'cancelled' && 'ยกเลิก'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                                {new Date(booking.createdAt).toLocaleDateString('th-TH')}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
+                                <div className="flex space-x-2 justify-end">
+                                  <select
+                                    value={booking.status}
+                                    onChange={(e) => handleUpdateBookingStatus(booking._id, e.target.value)}
+                                    className="text-xs bg-white/10 text-white border border-white/20 rounded-md focus:outline-none"
+                                  >
+                                    <option value="pending" className="bg-black text-yellow-300">รอดำเนินการ</option>
+                                    <option value="confirmed" className="bg-black text-green-300">ยืนยันแล้ว</option>
+                                    <option value="completed" className="bg-black text-blue-300">เสร็จสิ้น</option>
+                                    <option value="cancelled" className="bg-black text-red-300">ยกเลิก</option>
+                                  </select>
+                                  <button
+                                    onClick={() => handleDeleteBooking(booking._id)}
+                                    className="text-red-300 hover:text-red-400"
+                                    title="ลบการจอง"
+                                  >
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-8 text-center text-sm text-indigo-300">
+                              ไม่พบประวัติการจอง
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

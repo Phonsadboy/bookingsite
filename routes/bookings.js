@@ -9,10 +9,13 @@ const adminAuth = require('../middleware/adminAuth');
 // Get all bookings for admin
 router.get('/all', adminAuth, async (req, res) => {
   try {
-    // ดึงข้อมูลการจองทั้งหมดพร้อมกับข้อมูลครูและผู้ใช้
+    // ใช้ lean() เพื่อลดขนาดข้อมูลและเพิ่มประสิทธิภาพ
+    // จำกัดฟิลด์ที่ต้องการเพื่อลดขนาดข้อมูล
     const bookings = await Booking.find()
+      .select('teacher user day date startTime endTime status createdAt')
       .populate('teacher', 'name')
-      .populate('user', 'username name');
+      .populate('user', 'username name')
+      .lean();
     
     console.log('ส่งข้อมูลการจองทั้งหมด:', bookings.length, 'รายการ');
     res.json(bookings);
@@ -26,10 +29,52 @@ router.get('/all', adminAuth, async (req, res) => {
 router.get('/my-bookings', auth, async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user.userId })
+      .select('teacher day date startTime endTime status createdAt')
       .populate('teacher', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(bookings);
   } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get bookings history for specific user (admin only)
+router.get('/user/:userId', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // ตรวจสอบว่าผู้ใช้มีอยู่จริงหรือไม่
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลผู้ใช้' });
+    }
+    
+    // ดึงข้อมูลการจองทั้งหมดของผู้ใช้
+    const bookings = await Booking.find({ user: userId })
+      .select('teacher day date startTime endTime status createdAt')
+      .populate('teacher', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
+      
+    // เพิ่มข้อมูลสรุปเกี่ยวกับการจอง
+    const summary = {
+      total: bookings.length,
+      pending: bookings.filter(b => b.status === 'pending').length,
+      confirmed: bookings.filter(b => b.status === 'confirmed').length,
+      completed: bookings.filter(b => b.status === 'completed').length,
+      cancelled: bookings.filter(b => b.status === 'cancelled').length,
+      userInfo: {
+        name: user.name,
+        username: user.username,
+        totalLessons: user.totalLessons,
+        usedLessons: user.usedLessons
+      }
+    };
+    
+    res.json({ bookings, summary });
+  } catch (err) {
+    console.error('เกิดข้อผิดพลาดในการดึงประวัติการจอง:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -62,7 +107,14 @@ router.post('/', auth, async (req, res) => {
     }
     
     // คำนวณจำนวนคาบที่ใช้ไปแล้ว
-    if (user.usedLessons >= user.totalLessons && req.user.role !== 'admin') {
+    // หาจำนวนการจองที่ยืนยันแล้วหรือรอดำเนินการของผู้ใช้นี้
+    const confirmedBookingsCount = await Booking.countDocuments({
+      user: userId,
+      status: { $in: ['confirmed', 'pending'] }
+    });
+    
+    // ถ้าผู้ใช้ไม่ใช่แอดมินและจำนวนคาบที่ใช้ไปแล้วรวมกับที่รอดำเนินการเท่ากับหรือมากกว่าจำนวนคาบทั้งหมด
+    if (confirmedBookingsCount >= user.totalLessons && req.user.role !== 'admin') {
       return res.status(400).json({ message: 'คุณใช้คาบเรียนหมดแล้ว' });
     }
     
@@ -79,11 +131,7 @@ router.post('/', auth, async (req, res) => {
     
     await booking.save();
     
-    // อัพเดทจำนวนคาบที่ใช้ไป เว้นแต่เป็น admin ที่สร้างการจอง
-    if (req.user.role !== 'admin') {
-      user.usedLessons = (user.usedLessons || 0) + 1;
-      await user.save();
-    }
+    // ไม่ต้องอัพเดทจำนวนคาบที่ใช้ไปตอนสร้างการจอง จะอัพเดทตอนที่ยืนยันการจองเท่านั้น
     
     // ส่งข้อมูลการจองกลับไป
     const populatedBooking = await Booking.findById(booking._id)
@@ -122,13 +170,29 @@ router.put('/:id/status', adminAuth, async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบการจอง' });
     }
     
-    // ตรวจสอบถ้าเป็นการยกเลิกการจอง ให้คืนคาบเรียนให้กับผู้ใช้
-    if (status === 'cancelled' && booking.status !== 'cancelled') {
-      const user = await User.findById(booking.user);
-      if (user && user.usedLessons > 0) {
-        user.usedLessons -= 1;
-        await user.save();
+    const previousStatus = booking.status;
+    const user = await User.findById(booking.user);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลผู้ใช้ของการจองนี้' });
+    }
+    
+    // ตรวจสอบเมื่อมีการยืนยันการจอง (confirm) จะต้องลดจำนวนคาบเรียน
+    if (status === 'confirmed' && previousStatus !== 'confirmed') {
+      // ตรวจสอบว่ามีคาบเรียนเพียงพอหรือไม่
+      if (user.totalLessons <= user.usedLessons) {
+        return res.status(400).json({ message: 'ผู้ใช้มีคาบเรียนไม่เพียงพอ' });
       }
+      
+      // ลดจำนวนคาบเรียน
+      user.usedLessons = (user.usedLessons || 0) + 1;
+      await user.save();
+    }
+    
+    // ถ้าเปลี่ยนสถานะจาก confirmed เป็นอย่างอื่น ให้คืนคาบเรียน
+    if (previousStatus === 'confirmed' && status !== 'confirmed' && status !== 'completed') {
+      user.usedLessons = Math.max(0, (user.usedLessons || 0) - 1);
+      await user.save();
     }
     
     booking.status = status;
@@ -137,6 +201,7 @@ router.put('/:id/status', adminAuth, async (req, res) => {
     console.log('อัพเดทสถานะการจอง:', {
       id: booking._id, 
       status,
+      previousStatus,
       user: booking.user,
       teacher: booking.teacher
     });
@@ -161,11 +226,11 @@ router.delete('/:id', adminAuth, async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบการจอง' });
     }
     
-    // คืนคาบเรียนให้กับผู้ใช้ก่อนลบการจอง
-    if (booking.status !== 'cancelled') {
+    // คืนคาบเรียนให้กับผู้ใช้เฉพาะเมื่อการจองเป็นสถานะ confirmed
+    if (booking.status === 'confirmed') {
       const user = await User.findById(booking.user);
-      if (user && user.usedLessons > 0) {
-        user.usedLessons -= 1;
+      if (user) {
+        user.usedLessons = Math.max(0, (user.usedLessons || 0) - 1);
         await user.save();
       }
     }
@@ -174,6 +239,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
     
     console.log('ลบการจอง:', {
       id: req.params.id,
+      status: booking.status,
       user: booking.user,
       teacher: booking.teacher
     });
