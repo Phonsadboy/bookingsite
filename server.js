@@ -3,24 +3,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Check if frontend build exists
-const frontendPath = path.join(__dirname, 'client/dist');
-const indexPath = path.join(frontendPath, 'index.html');
-
-if (fs.existsSync(frontendPath)) {
-  // Serve static files from the React app
-  app.use(express.static(frontendPath));
-} else {
-  console.warn('Frontend build directory not found. API-only mode.');
-}
 
 // Connect to MongoDB
 const connectDB = async () => {
@@ -40,16 +28,13 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/bookings', require('./routes/bookings'));
 
-// Handle React routing, return all requests to React app
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'client/dist')));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
 app.get('*', (req, res) => {
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).json({ 
-      message: 'Frontend not built. Please make sure to build the frontend first.',
-      error: 'FRONTEND_NOT_BUILT'
-    });
-  }
+  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
 });
 
 // Error handling middleware
