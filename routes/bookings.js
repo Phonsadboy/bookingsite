@@ -55,6 +55,25 @@ router.get('/my-history', auth, async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
     
+    // เพิ่มข้อมูลสถานะการหักคาบเรียนให้กับแต่ละการจอง
+    const enhancedBookings = bookings.map(booking => {
+      // เพิ่มสถานะว่าการจองนี้ได้หักคาบเรียนหรือไม่ (จะหักเมื่อสถานะเป็น confirmed หรือ completed)
+      const deductedLesson = booking.status === 'confirmed' || booking.status === 'completed';
+      
+      // เพิ่มข้อมูลเวลาที่อัพเดทสถานะล่าสุด
+      const statusUpdatedAt = booking.updatedAt ? new Date(booking.updatedAt).toLocaleString('th-TH') : 'ไม่มีข้อมูล';
+      
+      return {
+        ...booking,
+        deductedLesson,
+        statusUpdatedAt,
+        // แปลงสถานะเป็นภาษาไทย
+        statusThai: booking.status === 'pending' ? 'รอดำเนินการ' : 
+                   booking.status === 'confirmed' ? 'ยืนยันแล้ว' : 
+                   booking.status === 'completed' ? 'เสร็จสิ้น' : 'ยกเลิก'
+      };
+    });
+    
     // เพิ่มข้อมูลสรุปเกี่ยวกับการจอง
     const summary = {
       total: bookings.length,
@@ -62,6 +81,7 @@ router.get('/my-history', auth, async (req, res) => {
       confirmed: bookings.filter(b => b.status === 'confirmed').length,
       completed: bookings.filter(b => b.status === 'completed').length,
       cancelled: bookings.filter(b => b.status === 'cancelled').length,
+      deductedLessons: bookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length,
       userInfo: {
         name: user.name,
         username: user.username,
@@ -71,7 +91,7 @@ router.get('/my-history', auth, async (req, res) => {
       }
     };
     
-    res.json({ bookings, summary });
+    res.json({ bookings: enhancedBookings, summary });
   } catch (err) {
     console.error('เกิดข้อผิดพลาดในการดึงประวัติการจอง:', err);
     res.status(500).json({ message: 'Server error' });
@@ -184,7 +204,10 @@ router.post('/', auth, async (req, res) => {
     const { teacherId, day, date, startTime, endTime } = req.body;
     
     // ในกรณีที่ admin ทำการจองให้ผู้ใช้ ให้ใช้ userId ที่ส่งมา แต่ถ้าเป็นผู้ใช้ทั่วไป ใช้ userId จาก token
-    const userId = req.body.userId && req.user.role === 'admin' ? req.body.userId : req.user.userId;
+    let userId = req.user.userId;
+    if (req.user.role === 'admin' && req.body.userId) {
+      userId = req.body.userId;
+    }
     
     // ตรวจสอบว่ามีการจองในช่วงเวลานี้แล้วหรือไม่
     const existingBooking = await Booking.findOne({
@@ -199,7 +222,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'ช่วงเวลานี้ถูกจองไปแล้ว' });
     }
     
-    // ตรวจสอบว่าผู้ใช้มีคาบเหลือพอหรือไม่
+    // ตรวจสอบว่าผู้ใช้มีอยู่ในระบบหรือไม่
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'ไม่พบข้อมูลผู้ใช้' });
@@ -212,8 +235,10 @@ router.post('/', auth, async (req, res) => {
       status: { $in: ['confirmed', 'pending'] }
     });
     
-    // ถ้าผู้ใช้ไม่ใช่แอดมินและจำนวนคาบที่ใช้ไปแล้วรวมกับที่รอดำเนินการเท่ากับหรือมากกว่าจำนวนคาบทั้งหมด
-    if (confirmedBookingsCount >= user.totalLessons && req.user.role !== 'admin') {
+    // ตรวจสอบเงื่อนไขการจองตาม role
+    // ถ้าเป็นแอดมินที่กำลังจองให้ผู้ใช้อื่น ไม่ต้องตรวจสอบจำนวนคาบเรียน
+    const isAdminBookingForOtherUser = req.user.role === 'admin' && req.body.userId;
+    if (!isAdminBookingForOtherUser && confirmedBookingsCount >= user.totalLessons) {
       return res.status(400).json({ message: 'คุณใช้คาบเรียนหมดแล้ว' });
     }
     

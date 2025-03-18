@@ -18,6 +18,9 @@ interface Booking {
   status: string;
   createdAt: string;
   notes: string;
+  statusThai?: string;
+  deductedLesson?: boolean;
+  statusUpdatedAt?: string;
 }
 
 interface User {
@@ -65,9 +68,14 @@ const MyBookings = () => {
         try {
           setLoading(true);
           setError('');
-          const res = await axios.get('/api/bookings/my-bookings');
-          console.log('ข้อมูลการจองของฉัน:', res.data);
-          setBookings(res.data);
+          
+          // ใช้ API /api/bookings/my-history แทน /api/bookings/my-bookings
+          const res = await axios.get('/api/bookings/my-history');
+          console.log('ข้อมูลประวัติการจองของฉัน:', res.data);
+          
+          // แยกข้อมูลการจองและข้อมูลสรุป
+          setBookings(res.data.bookings);
+          setBookingSummary(res.data.summary);
           
           // ดึงข้อมูลผู้ใช้เพื่อแสดงจำนวนคาบที่เหลือ
           const userRes = await axios.get('/api/auth/me');
@@ -467,7 +475,7 @@ const MyBookings = () => {
                                 </div>
                               </div>
                               <div className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${getStatusColor(booking.status)} text-white shadow`}>
-                                {getStatusText(booking.status)}
+                                {booking.statusThai || getStatusText(booking.status)}
                               </div>
                             </div>
                             
@@ -635,18 +643,23 @@ const MyBookings = () => {
                                   ${booking.status === 'completed' ? 'bg-blue-900/30 text-blue-300' : ''}
                                   ${booking.status === 'cancelled' ? 'bg-red-900/30 text-red-300' : ''}
                                 `}>
-                                  {getStatusText(booking.status)}
+                                  {booking.statusThai || getStatusText(booking.status)}
                                 </span>
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
-                                {booking.status === 'confirmed' || booking.status === 'completed' ? (
-                                  <span className="text-green-300">✓ หักแล้ว</span>
+                                {booking.deductedLesson ? (
+                                  <span className="text-green-300 flex items-center">
+                                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    หักแล้ว
+                                  </span>
                                 ) : (
                                   <span className="text-gray-400">-</span>
                                 )}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
-                                {new Date(booking.createdAt).toLocaleDateString('th-TH')}
+                                {booking.statusUpdatedAt || new Date(booking.createdAt).toLocaleDateString('th-TH')}
                               </td>
                             </tr>
                           ))
