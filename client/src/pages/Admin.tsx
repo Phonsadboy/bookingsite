@@ -273,7 +273,7 @@ const Admin = () => {
             b.status !== 'cancelled'
           );
           
-          if (booking) {
+          if (booking && booking.user) {
             console.log('พบการจอง:', booking._id, 'สำหรับครู:', teacher.name, 'วันที่:', slot.day, 'เวลา:', slot.startTime);
             return { ...slot, booking: { _id: booking._id, user: booking.user } };
           }
@@ -615,8 +615,8 @@ const Admin = () => {
       if (statusFilter === 'all') return true;
       if (statusFilter === 'available') return !slot.booking;
       if (statusFilter === 'booked') return slot.booking;
-      if (statusFilter === 'pending') return slot.booking && bookings.find(b => b._id === slot.booking?._id)?.status === 'pending';
-      if (statusFilter === 'confirmed') return slot.booking && bookings.find(b => b._id === slot.booking?._id)?.status === 'confirmed';
+      if (statusFilter === 'pending') return slot.booking && slot.booking._id && bookings.find(b => b._id === slot.booking?._id)?.status === 'pending';
+      if (statusFilter === 'confirmed') return slot.booking && slot.booking._id && bookings.find(b => b._id === slot.booking?._id)?.status === 'confirmed';
       return false;
     });
   };
@@ -1128,7 +1128,7 @@ const Admin = () => {
                                               <svg className="h-3.5 w-3.5 mr-1 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                               </svg>
-                                              <span className="font-medium text-green-200">{bookingDetail.user?.name || bookingDetail.user?.username || 'N/A'}</span>
+                                              <span className="font-medium text-green-200">{bookingDetail.user.name || bookingDetail.user.username}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                               <div>
@@ -1232,7 +1232,7 @@ const Admin = () => {
                           {booking.teacher.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-200">
-                          {booking.user?.name || booking.user?.username || 'N/A'}
+                          {booking.user.name || booking.user.username}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-300">
@@ -1301,7 +1301,7 @@ const Admin = () => {
                     {users.map((user) => (
                       <tr key={user._id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.username}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user?.name || "-"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.name || "-"}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.password}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.role === 'admin' ? 'แอดมิน' : 'ผู้ใช้'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{user.totalLessons}</td>
@@ -1645,7 +1645,7 @@ const Admin = () => {
                   <option value="" className="bg-white text-black">-- เลือกผู้ใช้ --</option>
                   {users.map(user => (
                     <option key={user._id} value={user._id} className="bg-white text-black">
-                      {user?.name || user?.username || 'N/A'}
+                      {user.name || user.username}
                     </option>
                   ))}
                 </select>
