@@ -2,7 +2,8 @@ import axios from 'axios';
 
 // สร้าง axios instance พร้อมกับ baseURL
 const api = axios.create({
-  baseURL: window.location.origin,
+  // ใช้ URL ของ Railway โดยตรง
+  baseURL: 'https://web-production-dd29.up.railway.app',
 });
 
 // Add a request interceptor

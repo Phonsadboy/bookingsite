@@ -3,6 +3,15 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
+const adminInfo = {
+  username: 'pp1234',
+  password: 'pp1234',
+  role: 'admin',
+  totalLessons: 999,
+  usedLessons: 0,
+  name: 'Admin User'
+};
+
 const createAdmin = async () => {
   try {
     // เชื่อมต่อกับ MongoDB
@@ -10,26 +19,28 @@ const createAdmin = async () => {
     console.log('เชื่อมต่อกับ MongoDB สำเร็จ');
 
     // เช็คว่ามีผู้ใช้นี้อยู่แล้วหรือไม่
-    const existingUser = await User.findOne({ username: 'pp1234' });
+    const existingUser = await User.findOne({ username: adminInfo.username });
     if (existingUser) {
-      // อัพเดตให้เป็นแอดมินถ้ามีผู้ใช้นี้อยู่แล้ว
-      existingUser.role = 'admin';
+      // อัพเดตข้อมูลถ้ามีผู้ใช้นี้อยู่แล้ว
+      existingUser.role = adminInfo.role;
+      existingUser.password = adminInfo.password; // เก็บรหัสผ่านโดยตรง ไม่ใช้ bcrypt
+      existingUser.totalLessons = adminInfo.totalLessons;
+      existingUser.name = adminInfo.name;
       await existingUser.save();
-      console.log('อัพเดตผู้ใช้ pp1234 เป็นแอดมินสำเร็จ');
+      console.log(`อัพเดตผู้ใช้ ${adminInfo.username} เป็นแอดมินสำเร็จ`);
     } else {
       // สร้างผู้ใช้ใหม่ถ้ายังไม่มี
-      const hashedPassword = await bcrypt.hash('pp1234', 10);
       const newAdmin = new User({
-        username: 'pp1234',
-        password: hashedPassword,
-        role: 'admin',
-        totalLessons: 999, // จำนวนบทเรียนทั้งหมด
-        usedLessons: 0,
-        email: 'admin@example.com'
+        username: adminInfo.username,
+        password: adminInfo.password, // เก็บรหัสผ่านโดยตรง ไม่ใช้ bcrypt
+        role: adminInfo.role,
+        totalLessons: adminInfo.totalLessons,
+        usedLessons: adminInfo.usedLessons,
+        name: adminInfo.name
       });
 
       await newAdmin.save();
-      console.log('สร้างผู้ใช้แอดมิน pp1234 สำเร็จ');
+      console.log(`สร้างผู้ใช้แอดมิน ${adminInfo.username} สำเร็จ`);
     }
 
     // ปิดการเชื่อมต่อ
