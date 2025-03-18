@@ -33,13 +33,31 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isLoading) return;
+    
+    if (!username || !password) {
+      setError('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
+      return;
+    }
+    
     setError('');
     setIsLoading(true);
 
     try {
       await login(username, password);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'เข้าสู่ระบบไม่สำเร็จ โปรดตรวจสอบชื่อผู้ใช้และรหัสผ่าน');
+      console.error('Login error details:', err);
+      
+      if (err.response?.status === 400) {
+        setError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+      } else if (err.response?.status === 500) {
+        setError('เซิร์ฟเวอร์มีปัญหา กรุณาลองใหม่ภายหลัง');
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('เข้าสู่ระบบไม่สำเร็จ โปรดตรวจสอบชื่อผู้ใช้และรหัสผ่าน');
+      }
     } finally {
       setIsLoading(false);
     }

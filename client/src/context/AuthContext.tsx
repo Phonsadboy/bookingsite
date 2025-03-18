@@ -67,9 +67,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string) => {
     try {
-      // ใช้ api instance ที่มี baseURL ตั้งไว้แล้ว
-      const res = await api.post('/api/auth/login', { username, password });
+      // ตรวจสอบก่อนว่ามีการส่งข้อมูลครบหรือไม่
+      if (!username || !password) {
+        throw new Error('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
+      }
+      
+      console.log('Attempting login with:', { username, password: '****' });
+      
+      // ปรับปรุง path ให้ถูกต้อง - ตรวจสอบว่า API endpoint ถูกต้อง
+      const res = await api.post('/api/auth/login', { 
+        username, 
+        password 
+      });
+      
       const { token, user } = res.data;
+      
+      if (!token || !user) {
+        throw new Error('ข้อมูลตอบกลับจากเซิร์ฟเวอร์ไม่ถูกต้อง');
+      }
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -80,6 +95,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } catch (error) {
       console.error('Login error', error);
+      // ตรวจสอบชนิดของ error และแสดงข้อความที่เหมาะสม
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+      }
       throw error;
     }
   };

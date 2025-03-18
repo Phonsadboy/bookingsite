@@ -10,13 +10,19 @@ const adminAuth = require('../middleware/adminAuth');
 router.post('/login', async (req, res) => {
   try {
     console.log('Login attempt:', req.body);
+    
+    // ตรวจสอบว่าได้รับข้อมูลครบหรือไม่
+    if (!req.body || !req.body.username || !req.body.password) {
+      return res.status(400).json({ message: 'กรุณาระบุชื่อผู้ใช้และรหัสผ่าน' });
+    }
+    
     const { username, password } = req.body;
     
     // Check if user exists
     const user = await User.findOne({ username });
     if (!user) {
       console.log('User not found:', username);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     console.log('User found:', user.username);
@@ -25,12 +31,17 @@ router.post('/login', async (req, res) => {
     // Validate password โดยการเทียบโดยตรง ไม่ต้องใช้ bcrypt
     if (password !== user.password) {
       console.log('Password mismatch');
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     console.log('Login successful');
     
     // Create and return JWT token
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not defined');
+      return res.status(500).json({ message: 'การตั้งค่าเซิร์ฟเวอร์ไม่ถูกต้อง' });
+    }
+    
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -50,7 +61,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Server error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง' });
   }
 });
 
