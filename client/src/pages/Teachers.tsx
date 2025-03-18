@@ -204,8 +204,8 @@ const Teachers = () => {
 
   const filteredTeachers = searchTerm 
     ? teachers.filter(t => 
-        t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        t.profileDescription.toLowerCase().includes(searchTerm.toLowerCase())
+        (t?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+        (t?.profileDescription?.toLowerCase() || '').includes(searchTerm.toLowerCase())
       )
     : teachers;
 
