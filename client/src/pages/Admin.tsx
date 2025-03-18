@@ -1081,27 +1081,49 @@ const Admin = () => {
                                 </span>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                    {slots.map((slot, index) => {
-                                      const slotIndex = teacher.availableSlots?.findIndex(
-                                        s => s.day === slot.day && s.startTime === slot.startTime && s.endTime === slot.endTime
-                                      ) || -1;
+                                {slots.map((slot, index) => {
+                                  // ค้นหา index ของ slot ในอาร์เรย์ availableSlots เพื่อใช้ในการลบ
+                                  let slotIndex = -1;
+                                  try {
+                                    slotIndex = teacher.availableSlots?.findIndex(
+                                      s => s && s.day === slot.day && s.startTime === slot.startTime && s.endTime === slot.endTime
+                                    ) || -1;
+                                  } catch (error) {
+                                    console.error('เกิดข้อผิดพลาดในการค้นหา slot index:', error);
+                                  }
                                   
-                                  // ตรวจสอบสถานะการจอง
-                                  const bookingDetail = bookings.find(b => {
-                                    return b.teacher._id === teacher._id && 
-                                           b.day === slot.day && 
-                                           b.startTime === slot.startTime && 
-                                           b.endTime === slot.endTime &&
-                                           b.status !== 'cancelled';
-                                  });
+                                  // ค้นหาข้อมูลการจองที่เกี่ยวข้องกับช่วงเวลานี้
+                                  let bookingDetail: Booking | undefined = undefined;
+                                  try {
+                                    bookingDetail = bookings.find(b => {
+                                      return b && b.teacher && b.teacher._id === teacher._id && 
+                                             b.day === slot.day && 
+                                             b.startTime === slot.startTime && 
+                                             b.endTime === slot.endTime &&
+                                             b.status !== 'cancelled';
+                                    });
+                                  } catch (error) {
+                                    console.error('เกิดข้อผิดพลาดในการค้นหาการจอง:', error);
+                                  }
                                   
+                                  // กำหนดสถานะและ ID ของการจอง (ถ้ามี)
                                   const bookingStatus = bookingDetail?.status || 'available';
-                                  const bookingId = bookingDetail?._id;
+                                  const bookingId = bookingDetail?._id || '';
                                   const slotClassName = getSlotStatusClass(bookingStatus);
                                   
-                                      return (
+                                  // ชื่อของผู้ใช้ที่จอง (มีการตรวจสอบเพื่อป้องกันข้อผิดพลาด)
+                                  let userName = 'ไม่ระบุชื่อ';
+                                  try {
+                                    if (bookingDetail && bookingDetail.user) {
+                                      userName = bookingDetail.user.name || bookingDetail.user.username || 'ไม่ระบุชื่อ';
+                                    }
+                                  } catch (error) {
+                                    console.error('เกิดข้อผิดพลาดในการเข้าถึงชื่อผู้ใช้:', error);
+                                  }
+                                  
+                                  return (
                                     <div 
-                                      key={index} 
+                                      key={`${slot.day}-${slot.startTime}-${index}`} 
                                       className={`rounded-lg p-3 ${slotClassName} hover:border-opacity-50 transition-all`}
                                     >
                                       <div className="flex justify-between items-start mb-2">
@@ -1124,9 +1146,10 @@ const Admin = () => {
                                             </button>
                                           )}
                                           <button
-                                            onClick={() => handleDeleteSlot(teacher._id, slotIndex)}
+                                            onClick={() => slotIndex >= 0 ? handleDeleteSlot(teacher._id, slotIndex) : null}
                                             className="p-1.5 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30"
                                             title="ลบช่วงเวลา"
+                                            disabled={slotIndex < 0}
                                           >
                                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1143,15 +1166,20 @@ const Admin = () => {
                                             </svg>
                                             <span>
                                               {(() => {
-                                                if (bookingDetail) {
-                                                  switch(bookingDetail.status) {
-                                                    case 'pending': return 'รอดำเนินการ';
-                                                    case 'confirmed': return 'ยืนยันแล้ว';
-                                                    case 'completed': return 'เสร็จสิ้น';
-                                                    case 'cancelled': return 'ยกเลิก';
-                                                    default: return 'จองแล้ว';
+                                                try {
+                                                  if (bookingDetail && bookingDetail.status) {
+                                                    switch(bookingDetail.status) {
+                                                      case 'pending': return 'รอดำเนินการ';
+                                                      case 'confirmed': return 'ยืนยันแล้ว';
+                                                      case 'completed': return 'เสร็จสิ้น';
+                                                      case 'cancelled': return 'ยกเลิก';
+                                                      default: return 'จองแล้ว';
+                                                    }
+                                                  } else {
+                                                    return 'จองแล้ว';
                                                   }
-                                                } else {
+                                                } catch (error) {
+                                                  console.error('เกิดข้อผิดพลาดในการแสดงสถานะการจอง:', error);
                                                   return 'จองแล้ว';
                                                 }
                                               })()}
@@ -1162,31 +1190,35 @@ const Admin = () => {
                                               <svg className="h-3.5 w-3.5 mr-1 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                               </svg>
-                                              <span className="font-medium text-green-200">{bookingDetail.user.name || bookingDetail.user.username}</span>
+                                              <span className="font-medium text-green-200">{userName}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                               <div>
-                                                {/* เพิ่มส่วนเปลี่ยนสถานะการจอง */}
-                                                <select
-                                                  value={bookingDetail.status}
-                                                  onChange={(e) => handleUpdateBookingStatus(bookingDetail._id, e.target.value)}
-                                                  className="text-xs bg-white/10 text-white border border-white/20 rounded-md focus:outline-none focus:ring-1 focus:ring-pink-500"
-                                                >
-                                                  <option value="pending" className="bg-black text-yellow-300">รอดำเนินการ</option>
-                                                  <option value="confirmed" className="bg-black text-green-300">ยืนยันแล้ว</option>
-                                                  <option value="completed" className="bg-black text-blue-300">เสร็จสิ้น</option>
-                                                  <option value="cancelled" className="bg-black text-red-300">ยกเลิก</option>
-                                                </select>
+                                                {/* เลือกสถานะการจองด้วยการป้องกันความปลอดภัย */}
+                                                {bookingDetail && bookingDetail._id && (
+                                                  <select
+                                                    value={bookingDetail.status || 'pending'}
+                                                    onChange={(e) => handleUpdateBookingStatus(bookingDetail._id, e.target.value)}
+                                                    className="text-xs bg-white/10 text-white border border-white/20 rounded-md focus:outline-none focus:ring-1 focus:ring-pink-500"
+                                                  >
+                                                    <option value="pending" className="bg-black text-yellow-300">รอดำเนินการ</option>
+                                                    <option value="confirmed" className="bg-black text-green-300">ยืนยันแล้ว</option>
+                                                    <option value="completed" className="bg-black text-blue-300">เสร็จสิ้น</option>
+                                                    <option value="cancelled" className="bg-black text-red-300">ยกเลิก</option>
+                                                  </select>
+                                                )}
                                               </div>
-                                              <button
-                                                onClick={() => handleDeleteBooking(bookingDetail._id)}
-                                                className="text-xs px-2 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 flex items-center"
-                                              >
-                                                <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                                ยกเลิกการจอง
-                                              </button>
+                                              {bookingDetail && bookingDetail._id && (
+                                                <button
+                                                  onClick={() => handleDeleteBooking(bookingDetail._id)}
+                                                  className="text-xs px-2 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 flex items-center"
+                                                >
+                                                  <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                                  </svg>
+                                                  ยกเลิกการจอง
+                                                </button>
+                                              )}
                                             </div>
                                           </div>
                                         </div>
@@ -1198,13 +1230,13 @@ const Admin = () => {
                                           <span>ว่าง (สามารถจองได้)</span>
                                         </div>
                                       )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
                           <div className="text-center py-10 px-6 bg-indigo-900/20 rounded-lg border border-indigo-800/30">
                             <svg className="mx-auto h-16 w-16 opacity-50 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1225,7 +1257,7 @@ const Admin = () => {
                             </button>
                           </div>
                         )}
-              </div>
+                      </div>
                     </div>
                   )}
                 </div>
