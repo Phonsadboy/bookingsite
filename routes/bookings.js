@@ -39,6 +39,45 @@ router.get('/my-bookings', auth, async (req, res) => {
   }
 });
 
+// Get user's booking history with lesson usage details
+router.get('/my-history', auth, async (req, res) => {
+  try {
+    // ดึงข้อมูลผู้ใช้
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลผู้ใช้' });
+    }
+    
+    // ดึงข้อมูลการจองทั้งหมดของผู้ใช้
+    const bookings = await Booking.find({ user: req.user.userId })
+      .select('teacher day date startTime endTime status createdAt updatedAt')
+      .populate('teacher', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // เพิ่มข้อมูลสรุปเกี่ยวกับการจอง
+    const summary = {
+      total: bookings.length,
+      pending: bookings.filter(b => b.status === 'pending').length,
+      confirmed: bookings.filter(b => b.status === 'confirmed').length,
+      completed: bookings.filter(b => b.status === 'completed').length,
+      cancelled: bookings.filter(b => b.status === 'cancelled').length,
+      userInfo: {
+        name: user.name,
+        username: user.username,
+        totalLessons: user.totalLessons,
+        usedLessons: user.usedLessons,
+        remainingLessons: user.totalLessons - user.usedLessons
+      }
+    };
+    
+    res.json({ bookings, summary });
+  } catch (err) {
+    console.error('เกิดข้อผิดพลาดในการดึงประวัติการจอง:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get bookings history for specific user (admin only)
 router.get('/user/:userId', adminAuth, async (req, res) => {
   try {
@@ -52,10 +91,29 @@ router.get('/user/:userId', adminAuth, async (req, res) => {
     
     // ดึงข้อมูลการจองทั้งหมดของผู้ใช้
     const bookings = await Booking.find({ user: userId })
-      .select('teacher day date startTime endTime status createdAt')
+      .select('teacher day date startTime endTime status createdAt updatedAt')
       .populate('teacher', 'name')
       .sort({ createdAt: -1 })
       .lean();
+    
+    // สร้างข้อมูลเพิ่มเติมเกี่ยวกับแต่ละการจอง
+    const enhancedBookings = bookings.map(booking => {
+      // เพิ่มสถานะว่าการจองนี้ได้หักคาบเรียนหรือไม่
+      const deductedLesson = booking.status === 'confirmed' || booking.status === 'completed';
+      
+      // เพิ่มข้อมูลเวลาที่อัพเดทสถานะล่าสุด
+      const statusUpdatedAt = booking.updatedAt ? new Date(booking.updatedAt).toLocaleString('th-TH') : 'ไม่มีข้อมูล';
+      
+      return {
+        ...booking,
+        deductedLesson,
+        statusUpdatedAt,
+        // แปลงสถานะเป็นภาษาไทย
+        statusThai: booking.status === 'pending' ? 'รอดำเนินการ' : 
+                   booking.status === 'confirmed' ? 'ยืนยันแล้ว' : 
+                   booking.status === 'completed' ? 'เสร็จสิ้น' : 'ยกเลิก'
+      };
+    });
       
     // เพิ่มข้อมูลสรุปเกี่ยวกับการจอง
     const summary = {
@@ -64,20 +122,61 @@ router.get('/user/:userId', adminAuth, async (req, res) => {
       confirmed: bookings.filter(b => b.status === 'confirmed').length,
       completed: bookings.filter(b => b.status === 'completed').length,
       cancelled: bookings.filter(b => b.status === 'cancelled').length,
+      deductedLessons: bookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length,
       userInfo: {
+        _id: user._id,
         name: user.name,
         username: user.username,
         totalLessons: user.totalLessons,
-        usedLessons: user.usedLessons
-      }
+        usedLessons: user.usedLessons,
+        remainingLessons: user.totalLessons - user.usedLessons
+      },
+      // เพิ่มข้อมูลสรุปรายเดือน
+      monthlyStats: getMonthlyBookingStats(bookings)
     };
     
-    res.json({ bookings, summary });
+    res.json({ bookings: enhancedBookings, summary });
   } catch (err) {
     console.error('เกิดข้อผิดพลาดในการดึงประวัติการจอง:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// ฟังก์ชันช่วยในการสร้างสถิติการจองรายเดือน
+function getMonthlyBookingStats(bookings) {
+  const stats = {};
+  
+  bookings.forEach(booking => {
+    // สร้าง key จากปีและเดือน: YYYY-MM
+    const date = new Date(booking.createdAt);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    
+    // สร้าง entry สำหรับเดือนถ้ายังไม่มี
+    if (!stats[monthKey]) {
+      stats[monthKey] = {
+        month: new Date(date.getFullYear(), date.getMonth(), 1).toLocaleDateString('th-TH', { year: 'numeric', month: 'long' }),
+        total: 0,
+        pending: 0,
+        confirmed: 0,
+        completed: 0,
+        cancelled: 0,
+        deductedLessons: 0
+      };
+    }
+    
+    // อัพเดทสถิติ
+    stats[monthKey].total += 1;
+    stats[monthKey][booking.status] += 1;
+    
+    // นับการหักคาบเรียน
+    if (booking.status === 'confirmed' || booking.status === 'completed') {
+      stats[monthKey].deductedLessons += 1;
+    }
+  });
+  
+  // แปลงจาก object เป็น array และเรียงตามเดือนล่าสุด
+  return Object.values(stats).sort((a, b) => new Date(b.month) - new Date(a.month));
+}
 
 // Create a new booking
 router.post('/', auth, async (req, res) => {

@@ -1458,7 +1458,7 @@ const Admin = () => {
                                 title="ดูประวัติการจอง"
                               >
                                 <svg className="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                 </svg>
                                 ประวัติ
                               </button>
@@ -1566,7 +1566,6 @@ const Admin = () => {
                   required
                 />
               </div>
-              
               <div className="mb-4">
                 <label className="block text-sm font-medium text-black mb-2">
                   เลือกช่วงเวลา (เลือกได้หลายช่วง)
@@ -1831,7 +1830,7 @@ const Admin = () => {
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-2xl font-semibold text-white flex items-center">
                     <svg className="mr-2 h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                     ประวัติการจองของ {userBookingHistory.summary.userInfo.name}
                   </h3>
@@ -1898,7 +1897,8 @@ const Admin = () => {
                           <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">วันที่</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">เวลา</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">สถานะ</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">จองเมื่อ</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">หักคาบเรียน</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">อัพเดทเมื่อ</th>
                           <th className="px-4 py-3 text-right text-xs font-medium text-indigo-300 uppercase">จัดการ</th>
                         </tr>
                       </thead>
@@ -1922,14 +1922,23 @@ const Admin = () => {
                                   ${booking.status === 'completed' ? 'bg-blue-900/30 text-blue-300' : ''}
                                   ${booking.status === 'cancelled' ? 'bg-red-900/30 text-red-300' : ''}
                                 `}>
-                                  {booking.status === 'pending' && 'รอดำเนินการ'}
-                                  {booking.status === 'confirmed' && 'ยืนยันแล้ว'}
-                                  {booking.status === 'completed' && 'เสร็จสิ้น'}
-                                  {booking.status === 'cancelled' && 'ยกเลิก'}
+                                  {booking.statusThai || booking.status}
                                 </span>
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
-                                {new Date(booking.createdAt).toLocaleDateString('th-TH')}
+                                {booking.deductedLesson ? (
+                                  <span className="text-green-300 flex items-center">
+                                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    หักแล้ว
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                                {booking.statusUpdatedAt || new Date(booking.updatedAt || booking.createdAt).toLocaleDateString('th-TH')}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
                                 <div className="flex space-x-2 justify-end">
@@ -1958,7 +1967,7 @@ const Admin = () => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={6} className="px-6 py-8 text-center text-sm text-indigo-300">
+                            <td colSpan={7} className="px-6 py-8 text-center text-sm text-indigo-300">
                               ไม่พบประวัติการจอง
                             </td>
                           </tr>
@@ -1967,6 +1976,41 @@ const Admin = () => {
                     </table>
                   </div>
                 </div>
+
+                {/* เพิ่มส่วนแสดงสถิติการจองรายเดือน */}
+                {userBookingHistory.summary && userBookingHistory.summary.monthlyStats && userBookingHistory.summary.monthlyStats.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-lg font-medium text-white mb-3">สถิติการจองรายเดือน</h4>
+                    <div className="bg-white/10 rounded-lg p-4 overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-indigo-300">เดือน</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium text-indigo-300">รวม</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium text-yellow-300">รอดำเนินการ</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium text-green-300">ยืนยันแล้ว</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium text-blue-300">เสร็จสิ้น</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium text-red-300">ยกเลิก</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium text-indigo-300">การหักคาบ</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userBookingHistory.summary.monthlyStats.map((month: any, index: number) => (
+                            <tr key={index} className="hover:bg-white/5">
+                              <td className="px-4 py-2 text-sm text-white">{month.month}</td>
+                              <td className="px-4 py-2 text-center text-sm text-white">{month.total}</td>
+                              <td className="px-4 py-2 text-center text-sm text-yellow-300">{month.pending}</td>
+                              <td className="px-4 py-2 text-center text-sm text-green-300">{month.confirmed}</td>
+                              <td className="px-4 py-2 text-center text-sm text-blue-300">{month.completed}</td>
+                              <td className="px-4 py-2 text-center text-sm text-red-300">{month.cancelled}</td>
+                              <td className="px-4 py-2 text-center text-sm text-white">{month.deductedLessons}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

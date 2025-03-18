@@ -43,6 +43,21 @@ const MyBookings = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [bookingSummary, setBookingSummary] = useState<{
+    total: number;
+    pending: number;
+    confirmed: number;
+    completed: number;
+    cancelled: number;
+    userInfo: {
+      name: string;
+      username: string;
+      totalLessons: number;
+      usedLessons: number;
+      remainingLessons: number;
+    }
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -315,8 +330,8 @@ const MyBookings = () => {
             </div>
           </div>
           
-          <div className="mt-4">
-            <div className="w-full bg-white/5 rounded-full h-2">
+          <div className="mt-4 flex justify-between items-center">
+            <div className="w-full md:w-3/4 bg-white/5 rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full" 
                 style={{ 
@@ -324,10 +339,19 @@ const MyBookings = () => {
                 }}
               ></div>
             </div>
-            <div className="flex justify-between mt-1 text-xs text-indigo-300">
+            <div className="hidden md:flex justify-between mt-1 text-xs text-indigo-300 w-3/4 px-1">
               <span>0</span>
               <span>{user?.totalLessons || 0} คาบ</span>
             </div>
+            <button
+              onClick={() => setShowHistoryModal(true)}
+              className="ml-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-md flex items-center text-sm"
+            >
+              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              ประวัติการจอง
+            </button>
           </div>
         </div>
 
@@ -507,6 +531,141 @@ const MyBookings = () => {
           </>
         )}
       </div>
+
+      {/* โมดอลแสดงประวัติการจองโดยละเอียด */}
+      {showHistoryModal && bookingSummary && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-black opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-semibold text-white flex items-center">
+                    <svg className="mr-2 h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    ประวัติการจองของฉัน
+                  </h3>
+                  <button
+                    onClick={() => setShowHistoryModal(false)}
+                    className="text-white hover:text-gray-300 focus:outline-none"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* ส่วนแสดงข้อมูลสรุป */}
+                <div className="bg-white/10 rounded-lg p-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                      <p className="text-sm text-indigo-300">ทั้งหมด</p>
+                      <p className="text-2xl font-bold text-white">{bookingSummary.total}</p>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-yellow-500/20">
+                      <p className="text-sm text-yellow-300">รอดำเนินการ</p>
+                      <p className="text-2xl font-bold text-white">{bookingSummary.pending}</p>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-green-500/20">
+                      <p className="text-sm text-green-300">ยืนยันแล้ว</p>
+                      <p className="text-2xl font-bold text-white">{bookingSummary.confirmed}</p>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-blue-500/20">
+                      <p className="text-sm text-blue-300">เสร็จสิ้น</p>
+                      <p className="text-2xl font-bold text-white">{bookingSummary.completed}</p>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg border border-red-500/20">
+                      <p className="text-sm text-red-300">ยกเลิก</p>
+                      <p className="text-2xl font-bold text-white">{bookingSummary.cancelled}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-indigo-200">
+                      <p className="text-sm">จำนวนคาบทั้งหมด: <span className="font-semibold text-white">{bookingSummary.userInfo.totalLessons}</span></p>
+                      <p className="text-sm">ใช้ไปแล้ว: <span className="font-semibold text-white">{bookingSummary.userInfo.usedLessons}</span></p>
+                      <p className="text-sm">คงเหลือ: <span className="font-semibold text-white">{bookingSummary.userInfo.remainingLessons}</span></p>
+                    </div>
+                    <div className="w-64 bg-white/5 rounded-full h-2 mr-4">
+                      <div 
+                        className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full" 
+                        style={{ 
+                          width: `${bookingSummary.userInfo.totalLessons ? (bookingSummary.userInfo.usedLessons / bookingSummary.userInfo.totalLessons) * 100 : 0}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ตารางแสดงประวัติการจอง */}
+                <div className="bg-white/10 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-white/10">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">ครู</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">วันที่</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">เวลา</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">สถานะ</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">หักคาบเรียน</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">จองเมื่อ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/10">
+                        {bookings.length > 0 ? (
+                          bookings.map((booking: any) => (
+                            <tr key={booking._id} className="hover:bg-white/5">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-white">
+                                {booking.teacher?.name || 'ไม่ระบุ'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                                {booking.day}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                                {booking.startTime} - {booking.endTime}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                <span className={`px-2 py-1 rounded-full text-xs
+                                  ${booking.status === 'pending' ? 'bg-yellow-900/30 text-yellow-300' : ''}
+                                  ${booking.status === 'confirmed' ? 'bg-green-900/30 text-green-300' : ''}
+                                  ${booking.status === 'completed' ? 'bg-blue-900/30 text-blue-300' : ''}
+                                  ${booking.status === 'cancelled' ? 'bg-red-900/30 text-red-300' : ''}
+                                `}>
+                                  {getStatusText(booking.status)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                                {booking.status === 'confirmed' || booking.status === 'completed' ? (
+                                  <span className="text-green-300">✓ หักแล้ว</span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                                {new Date(booking.createdAt).toLocaleDateString('th-TH')}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-8 text-center text-sm text-indigo-300">
+                              ไม่พบประวัติการจอง
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

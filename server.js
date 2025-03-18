@@ -41,17 +41,42 @@ app.use((req, res, next) => {
 // Connect to MongoDB
 const connectDB = async () => {
   try {
+    console.log('Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000, // เพิ่มเวลาในการเลือกเซิร์ฟเวอร์
-      socketTimeoutMS: 60000, // เพิ่มเวลาในการรอการเชื่อมต่อ
+      serverSelectionTimeoutMS: 15000, // เพิ่มเวลาในการเลือกเซิร์ฟเวอร์
+      socketTimeoutMS: 45000, // เพิ่มเวลาในการรอการเชื่อมต่อ
       family: 4, // ใช้ IPv4 เท่านั้น
-      maxPoolSize: 10, // จำกัด connection pool เพื่อประหยัดทรัพยากร
+      maxPoolSize: 5, // จำกัด connection pool เพื่อประหยัดทรัพยากร
+      minPoolSize: 1, // ค่าต่ำสุดของ connection pool
       connectTimeoutMS: 30000, // เพิ่มเวลาในการเชื่อมต่อ
+      heartbeatFrequencyMS: 30000, // ตรวจสอบการเชื่อมต่อทุก 30 วินาที
+      autoIndex: false, // ปิดการสร้าง index อัตโนมัติในโหมด production
+      maxIdleTimeMS: 60000, // ปิดการเชื่อมต่อที่ไม่ได้ใช้งานหลังจาก 1 นาที
     });
+    
+    mongoose.connection.on('error', (err) => {
+      console.error('MongoDB connection error:', err);
+      
+      // พยายามเชื่อมต่อใหม่อัตโนมัติหลังจาก 5 วินาที
+      setTimeout(() => {
+        console.log('Attempting to reconnect to MongoDB...');
+        mongoose.connect(process.env.MONGODB_URI);
+      }, 5000);
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.log('MongoDB disconnected. Attempting to reconnect...');
+      setTimeout(() => {
+        mongoose.connect(process.env.MONGODB_URI);
+      }, 5000);
+    });
+    
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
-    process.exit(1);
+    
+    // พยายามเชื่อมต่อใหม่หลังจาก 5 วินาที
+    setTimeout(connectDB, 5000);
   }
 };
 
@@ -59,15 +84,21 @@ const connectDB = async () => {
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Closing HTTP server and MongoDB connection...');
   try {
-    await new Promise((resolve) => {
-      server.close(() => {
-        console.log('HTTP server closed');
-        resolve();
+    if (server) {
+      await new Promise((resolve) => {
+        server.close(() => {
+          console.log('HTTP server closed');
+          resolve();
+        });
       });
-    });
+    }
     
-    await mongoose.connection.close(false);
-    console.log('MongoDB connection closed');
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close(false);
+      console.log('MongoDB connection closed');
+    }
+    
+    console.log('Graceful shutdown completed');
     process.exit(0);
   } catch (err) {
     console.error('Error during graceful shutdown:', err);
@@ -78,15 +109,21 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('SIGINT received. Closing HTTP server and MongoDB connection...');
   try {
-    await new Promise((resolve) => {
-      server.close(() => {
-        console.log('HTTP server closed');
-        resolve();
+    if (server) {
+      await new Promise((resolve) => {
+        server.close(() => {
+          console.log('HTTP server closed');
+          resolve();
+        });
       });
-    });
+    }
     
-    await mongoose.connection.close(false);
-    console.log('MongoDB connection closed');
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close(false);
+      console.log('MongoDB connection closed');
+    }
+    
+    console.log('Graceful shutdown completed');
     process.exit(0);
   } catch (err) {
     console.error('Error during graceful shutdown:', err);
@@ -157,12 +194,41 @@ app.use((err, req, res, next) => {
 });
 
 // เพิ่ม garbage collection เพื่อลดการใช้หน่วยความจำ
+if (global.gc) {
+  setInterval(() => {
+    try {
+      global.gc();
+      console.log('Garbage collection executed');
+    } catch (err) {
+      console.error('Error during garbage collection:', err);
+    }
+  }, 15 * 60 * 1000); // ทุก 15 นาที
+} else {
+  console.log('No garbage collection available. Start with --expose-gc flag for manual memory management');
+}
+
+// ตรวจสอบการใช้หน่วยความจำและบังคับ garbage collection ถ้าใช้มากเกินไป
 setInterval(() => {
-  if (global.gc) {
-    global.gc();
-    console.log('Garbage collection executed');
+  try {
+    const memoryUsage = process.memoryUsage();
+    const memoryUsageMB = {
+      rss: Math.round(memoryUsage.rss / 1024 / 1024 * 100) / 100,
+      heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024 * 100) / 100,
+      heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024 * 100) / 100,
+      external: Math.round(memoryUsage.external / 1024 / 1024 * 100) / 100,
+    };
+    
+    console.log('Memory usage (MB):', memoryUsageMB);
+    
+    // ถ้าใช้หน่วยความจำมากกว่า 500MB ให้พยายามทำ garbage collection
+    if (memoryUsageMB.heapUsed > 500 && global.gc) {
+      console.log('Memory usage high, forcing garbage collection');
+      global.gc();
+    }
+  } catch (err) {
+    console.error('Error checking memory usage:', err);
   }
-}, 30 * 60 * 1000); // ทุก 30 นาที
+}, 5 * 60 * 1000); // ทุก 5 นาที
 
 const PORT = process.env.PORT || 5002;
 const server = app.listen(PORT, () => {
