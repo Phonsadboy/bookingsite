@@ -128,7 +128,7 @@ const MyBookings = () => {
   // กรองการจองตามหลายเงื่อนไข
   const filteredBookings = bookings.filter(booking => {
     // ตรวจสอบว่า booking.teacher มีอยู่จริงหรือไม่
-    if (!booking.teacher) return false;
+    if (!booking.teacher || !booking.teacher.name) return false;
     
     // กรองตามแท็บสถานะ
     const statusMatch = activeTab === 'all' || booking.status === activeTab;
@@ -145,8 +145,8 @@ const MyBookings = () => {
 
   // จัดกลุ่มการจองตามครู
   const groupedByTeacher = filteredBookings.reduce((acc, booking) => {
-    // ตรวจสอบว่า booking.teacher มีอยู่จริง
-    if (!booking.teacher || !booking.teacher._id) return acc;
+    // ตรวจสอบว่า booking.teacher มีอยู่จริงและมี name และ _id
+    if (!booking.teacher || !booking.teacher._id || !booking.teacher.name) return acc;
     
     const teacherId = booking.teacher._id;
     if (!acc[teacherId]) {
