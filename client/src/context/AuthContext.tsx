@@ -44,6 +44,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           // Set default headers for all axios requests
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          // เพิ่ม x-auth-token header
+          axios.defaults.headers.common['x-auth-token'] = token;
           
           // You would typically have an endpoint to get user data
           // For now, we'll just decode the token or use stored user data
@@ -93,6 +95,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(user);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // เพิ่ม x-auth-token header
+      axios.defaults.headers.common['x-auth-token'] = token;
+      api.defaults.headers.common['x-auth-token'] = token;
     } catch (error) {
       console.error('Login error', error);
       // ตรวจสอบชนิดของ error และแสดงข้อความที่เหมาะสม
@@ -111,6 +116,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     delete axios.defaults.headers.common['Authorization'];
     delete api.defaults.headers.common['Authorization'];
+    // ลบ x-auth-token header ด้วย
+    delete axios.defaults.headers.common['x-auth-token'];
+    delete api.defaults.headers.common['x-auth-token'];
   };
 
   const value = {

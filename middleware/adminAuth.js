@@ -4,10 +4,20 @@ const User = require('../models/User');
 // Middleware for admin-only routes
 module.exports = function(req, res, next) {
   try {
-    // Get token from header
-    const token = req.header('x-auth-token');
+    // ตรวจสอบ token จากทั้งเฮดเดอร์ Authorization และ x-auth-token
+    let token;
     
-    // ตรวจสอบว่ามี token หรือไม่
+    // ตรวจสอบจาก Authorization header ก่อน (Bearer token)
+    const authHeader = req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.replace('Bearer ', '');
+    } 
+    // ถ้าไม่มี ให้ตรวจสอบจาก x-auth-token
+    else if (req.header('x-auth-token')) {
+      token = req.header('x-auth-token');
+    }
+    
+    // ถ้าไม่พบ token จากทั้งสองที่
     if (!token) {
       console.log('Admin auth failed: No token provided');
       return res.status(401).json({ message: 'ไม่พบ token สำหรับการยืนยันตัวตน กรุณาล็อกอินใหม่' });
