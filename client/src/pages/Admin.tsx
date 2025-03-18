@@ -404,6 +404,9 @@ const Admin = () => {
     if (isAuthenticated && user?.role === 'admin' && activeTab === 'teachers') {
       fetchTeachersWithBookings();
       
+      // ดึงข้อมูลผู้ใช้เพื่อใช้ในการจอง
+      fetchUsers();
+      
       // ตั้งเวลาให้โหลดข้อมูลทุกๆ 10 วินาที เฉพาะเมื่อเปิดใช้การรีเฟรชอัตโนมัติ
       let intervalId: NodeJS.Timeout | null = null;
       
@@ -441,6 +444,16 @@ const Admin = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAuthenticated, user, activeTab]);
+
+  // เพิ่มฟังก์ชัน fetchUsers เพื่อดึงข้อมูลผู้ใช้
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get('/api/auth/users');
+      setUsers(res.data);
+    } catch (err) {
+      console.error('ไม่สามารถโหลดข้อมูลผู้ใช้ได้:', err);
+    }
+  };
 
   const handleAddTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -615,8 +628,8 @@ const Admin = () => {
 
     try {
       await axios.post(`/api/bookings`, {
-        user: selectedUserForBooking,
-        teacher: selectedTeacherForBooking._id,
+        userId: selectedUserForBooking,
+        teacherId: selectedTeacherForBooking._id,
         day: selectedSlot.day,
         date: selectedSlot.day,
         startTime: selectedSlot.startTime,
