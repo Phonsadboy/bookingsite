@@ -273,9 +273,23 @@ const Admin = () => {
             b.status !== 'cancelled'
           );
           
-          if (booking && booking.user) {
-            console.log('พบการจอง:', booking._id, 'สำหรับครู:', teacher.name, 'วันที่:', slot.day, 'เวลา:', slot.startTime);
-            return { ...slot, booking: { _id: booking._id, user: booking.user } };
+          try {
+            if (booking && booking.user && booking._id) {
+              console.log('พบการจอง:', booking._id, 'สำหรับครู:', teacher.name, 'วันที่:', slot.day, 'เวลา:', slot.startTime);
+              return { 
+                ...slot, 
+                booking: { 
+                  _id: booking._id, 
+                  user: {
+                    _id: booking.user._id || '',
+                    username: booking.user.username || '',
+                    name: booking.user.name || ''
+                  } 
+                } 
+              };
+            }
+          } catch (error) {
+            console.error('เกิดข้อผิดพลาดในการประมวลผลการจอง:', error);
           }
           return slot;
         });
@@ -614,9 +628,24 @@ const Admin = () => {
     return teacher.availableSlots.filter(slot => {
       if (statusFilter === 'all') return true;
       if (statusFilter === 'available') return !slot.booking;
-      if (statusFilter === 'booked') return slot.booking;
-      if (statusFilter === 'pending') return slot.booking && slot.booking._id && bookings.find(b => b._id === slot.booking?._id)?.status === 'pending';
-      if (statusFilter === 'confirmed') return slot.booking && slot.booking._id && bookings.find(b => b._id === slot.booking?._id)?.status === 'confirmed';
+      if (statusFilter === 'booked') return !!slot.booking;
+      
+      try {
+        if (statusFilter === 'pending') {
+          if (!slot.booking || !slot.booking._id) return false;
+          const matchingBooking = bookings.find(b => b && b._id === slot.booking?._id);
+          return !!matchingBooking && matchingBooking.status === 'pending';
+        }
+        if (statusFilter === 'confirmed') {
+          if (!slot.booking || !slot.booking._id) return false;
+          const matchingBooking = bookings.find(b => b && b._id === slot.booking?._id);
+          return !!matchingBooking && matchingBooking.status === 'confirmed';
+        }
+      } catch (error) {
+        console.error('เกิดข้อผิดพลาดในการกรองช่วงเวลา:', error);
+        return false;
+      }
+      
       return false;
     });
   };
@@ -814,7 +843,12 @@ const Admin = () => {
                           
                           // คำนวณจำนวนการจองทั้งหมดของครู
                           const availableSlots = teacher.availableSlots || [];
-                          const bookedSlots = availableSlots.filter(slot => slot && slot.booking).length;
+                          let bookedSlots = 0;
+                          try {
+                            bookedSlots = availableSlots.filter(slot => slot && !!slot.booking).length;
+                          } catch (error) {
+                            console.error('เกิดข้อผิดพลาดในการนับจำนวนช่วงเวลาที่ถูกจอง:', error);
+                          }
                           const totalSlots = availableSlots.length;
                           
                           return (
