@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // สร้าง axios instance พร้อมกับ baseURL
 const api = axios.create({
-  // ใช้ URL ที่ถูกต้อง - ตรวจสอบว่าเป็น URL ที่ถูกต้องของ API
+  // ตรวจสอบว่า URL ที่ถูกต้องควรเป็นแบบใด
   baseURL: 'https://web-production-dd29.up.railway.app',
   // เพิ่ม timeout เพื่อให้มีเวลาในการเชื่อมต่อมากขึ้น
   timeout: 10000,

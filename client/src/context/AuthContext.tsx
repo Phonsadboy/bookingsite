@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('Attempting login with:', { username, password: '****' });
       
-      // ปรับปรุง path ให้ถูกต้อง - ตรวจสอบว่า API endpoint ถูกต้อง
+      // ใช้ path ที่ถูกต้อง /api/auth/login ตามที่กำหนดใน server.js
       const res = await api.post('/api/auth/login', { 
         username, 
         password 
