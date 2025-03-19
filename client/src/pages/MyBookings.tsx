@@ -272,11 +272,11 @@ const MyBookings = () => {
         </div>
 
         {/* แท็บสำหรับกรองสถานะ */}
-        <div className="mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-1 max-w-2xl mx-auto">
-          <div className="flex flex-wrap">
+        <div className="mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-1 max-w-2xl mx-auto overflow-x-auto">
+          <div className="flex min-w-max">
             <button
               onClick={() => setActiveTab('all')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'all'
                   ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
                   : 'text-white/70 hover:text-white hover:bg-white/10'
@@ -286,7 +286,7 @@ const MyBookings = () => {
             </button>
             <button
               onClick={() => setActiveTab('pending')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'pending'
                   ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-lg'
                   : 'text-white/70 hover:text-white hover:bg-white/10'
@@ -296,7 +296,7 @@ const MyBookings = () => {
             </button>
             <button
               onClick={() => setActiveTab('confirmed')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'confirmed'
                   ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg'
                   : 'text-white/70 hover:text-white hover:bg-white/10'
@@ -306,7 +306,7 @@ const MyBookings = () => {
             </button>
             <button
               onClick={() => setActiveTab('completed')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'completed'
                   ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
                   : 'text-white/70 hover:text-white hover:bg-white/10'
@@ -318,28 +318,28 @@ const MyBookings = () => {
         </div>
 
         {/* เพิ่มการแสดงจำนวนคาบเรียนที่ด้านบนก่อนตารางการจอง */}
-        <div className="my-6 bg-white/10 backdrop-blur-lg rounded-xl shadow-lg border border-white/10 p-6">
+        <div className="my-6 bg-white/10 backdrop-blur-lg rounded-xl shadow-lg border border-white/10 p-4 sm:p-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <h1 className="text-2xl md:text-3xl font-bold text-white">การจองของฉัน</h1>
             
-            <div className="mt-4 md:mt-0 flex space-x-4">
-              <div className="bg-white/5 p-4 rounded-lg border border-white/10 text-center">
-                <p className="text-sm text-indigo-300">คาบเรียนทั้งหมด</p>
-                <p className="text-2xl font-bold text-white">{user?.totalLessons || 0}</p>
+            <div className="mt-4 md:mt-0 grid grid-cols-3 gap-2 w-full md:w-auto md:flex md:space-x-4">
+              <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 text-center">
+                <p className="text-xs sm:text-sm text-indigo-300">คาบเรียนทั้งหมด</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">{user?.totalLessons || 0}</p>
               </div>
-              <div className="bg-white/5 p-4 rounded-lg border border-white/10 text-center">
-                <p className="text-sm text-indigo-300">ใช้ไปแล้ว</p>
-                <p className="text-2xl font-bold text-white">{user?.usedLessons || 0}</p>
+              <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 text-center">
+                <p className="text-xs sm:text-sm text-indigo-300">ใช้ไปแล้ว</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">{user?.usedLessons || 0}</p>
               </div>
-              <div className="bg-white/5 p-4 rounded-lg border border-indigo-500/20 text-center">
-                <p className="text-sm text-indigo-300">คงเหลือ</p>
-                <p className="text-2xl font-bold text-white">{(user?.totalLessons || 0) - (user?.usedLessons || 0)}</p>
+              <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-indigo-500/20 text-center">
+                <p className="text-xs sm:text-sm text-indigo-300">คงเหลือ</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">{(user?.totalLessons || 0) - (user?.usedLessons || 0)}</p>
               </div>
             </div>
           </div>
           
-          <div className="mt-4 flex justify-between items-center">
-            <div className="w-full md:w-3/4 bg-white/5 rounded-full h-2">
+          <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="w-full bg-white/5 rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full" 
                 style={{ 
@@ -347,13 +347,13 @@ const MyBookings = () => {
                 }}
               ></div>
             </div>
-            <div className="hidden md:flex justify-between mt-1 text-xs text-indigo-300 w-3/4 px-1">
+            <div className="hidden sm:flex justify-between mt-1 text-xs text-indigo-300 w-full sm:w-3/4 px-1">
               <span>0</span>
               <span>{user?.totalLessons || 0} คาบ</span>
             </div>
             <button
               onClick={() => setShowHistoryModal(true)}
-              className="ml-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-md flex items-center text-sm"
+              className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-md flex items-center justify-center text-sm"
             >
               <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -410,16 +410,16 @@ const MyBookings = () => {
               {currentTeachers.map(({ teacher, bookings }) => (
                 <div key={teacher._id} className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
                   <div 
-                    className="bg-gradient-to-r from-indigo-900/80 to-purple-900/80 px-6 py-4 border-b border-white/10 flex justify-between items-center cursor-pointer"
+                    className="bg-gradient-to-r from-indigo-900/80 to-purple-900/80 px-4 sm:px-6 py-4 border-b border-white/10 flex justify-between items-center cursor-pointer"
                     onClick={() => toggleTeacher(teacher._id)}
                   >
                     <div className="flex items-center">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold mr-3">
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold mr-2 sm:mr-3 flex-shrink-0">
                         {teacher.name.charAt(0)}
                       </div>
-                      <h2 className="text-xl font-semibold">ครู{teacher.name}</h2>
-                      <div className="ml-4 px-2 py-1 bg-indigo-800/50 text-indigo-200 rounded-full text-xs">
-                        {bookings.length} คาบเรียน
+                      <h2 className="text-base sm:text-xl font-semibold truncate">ครู{teacher.name}</h2>
+                      <div className="ml-2 sm:ml-4 px-2 py-1 bg-indigo-800/50 text-indigo-200 rounded-full text-xs">
+                        {bookings.length} คาบ
                       </div>
                     </div>
                     <svg 
@@ -433,14 +433,14 @@ const MyBookings = () => {
                   </div>
                   
                   {(expandedTeacher === teacher._id || expandedTeacher === null) && (
-                    <div className="p-4 md:p-6">
-                      <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="p-3 sm:p-4 md:p-6">
+                      <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                         {bookings.map(booking => (
                           <div 
                             key={booking._id} 
-                            className={`rounded-lg p-4 border ${getStatusBg(booking.status)}`}
+                            className={`rounded-lg p-3 sm:p-4 border ${getStatusBg(booking.status)}`}
                           >
-                            <div className="flex justify-between items-start mb-3">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-2">
                               <div>
                                 <div className="flex items-center mb-1 space-x-1">
                                   <svg className="h-4 w-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -474,7 +474,7 @@ const MyBookings = () => {
                                   </button>
                                 </div>
                               </div>
-                              <div className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${getStatusColor(booking.status)} text-white shadow`}>
+                              <div className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${getStatusColor(booking.status)} text-white shadow mt-1 sm:mt-0 self-start`}>
                                 {booking.statusThai || getStatusText(booking.status)}
                               </div>
                             </div>
@@ -487,7 +487,7 @@ const MyBookings = () => {
                             </div>
                             
                             {booking.notes && (
-                              <div className="mt-3 p-2 bg-white/5 rounded text-sm">
+                              <div className="mt-3 p-2 bg-white/5 rounded text-xs sm:text-sm">
                                 <p className="text-indigo-200">{booking.notes}</p>
                               </div>
                             )}
@@ -549,10 +549,10 @@ const MyBookings = () => {
             </div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div className="inline-block align-bottom bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-semibold text-white flex items-center">
-                    <svg className="mr-2 h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="p-4 sm:p-6">
+                <div className="flex justify-between items-center mb-4 sm:mb-6">
+                  <h3 className="text-xl sm:text-2xl font-semibold text-white flex items-center">
+                    <svg className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                     ประวัติการจองของฉัน
@@ -568,37 +568,37 @@ const MyBookings = () => {
                 </div>
 
                 {/* ส่วนแสดงข้อมูลสรุป */}
-                <div className="bg-white/10 rounded-lg p-4 mb-6">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
-                      <p className="text-sm text-indigo-300">ทั้งหมด</p>
-                      <p className="text-2xl font-bold text-white">{bookingSummary.total}</p>
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
+                    <div className="text-center p-2 sm:p-3 bg-white/5 rounded-lg border border-white/10">
+                      <p className="text-xs sm:text-sm text-indigo-300">ทั้งหมด</p>
+                      <p className="text-xl sm:text-2xl font-bold text-white">{bookingSummary.total}</p>
                     </div>
-                    <div className="text-center p-3 bg-white/5 rounded-lg border border-yellow-500/20">
-                      <p className="text-sm text-yellow-300">รอดำเนินการ</p>
-                      <p className="text-2xl font-bold text-white">{bookingSummary.pending}</p>
+                    <div className="text-center p-2 sm:p-3 bg-white/5 rounded-lg border border-yellow-500/20">
+                      <p className="text-xs sm:text-sm text-yellow-300">รอดำเนินการ</p>
+                      <p className="text-xl sm:text-2xl font-bold text-white">{bookingSummary.pending}</p>
                     </div>
-                    <div className="text-center p-3 bg-white/5 rounded-lg border border-green-500/20">
-                      <p className="text-sm text-green-300">ยืนยันแล้ว</p>
-                      <p className="text-2xl font-bold text-white">{bookingSummary.confirmed}</p>
+                    <div className="text-center p-2 sm:p-3 bg-white/5 rounded-lg border border-green-500/20">
+                      <p className="text-xs sm:text-sm text-green-300">ยืนยันแล้ว</p>
+                      <p className="text-xl sm:text-2xl font-bold text-white">{bookingSummary.confirmed}</p>
                     </div>
-                    <div className="text-center p-3 bg-white/5 rounded-lg border border-blue-500/20">
-                      <p className="text-sm text-blue-300">เสร็จสิ้น</p>
-                      <p className="text-2xl font-bold text-white">{bookingSummary.completed}</p>
+                    <div className="text-center p-2 sm:p-3 bg-white/5 rounded-lg border border-blue-500/20">
+                      <p className="text-xs sm:text-sm text-blue-300">เสร็จสิ้น</p>
+                      <p className="text-xl sm:text-2xl font-bold text-white">{bookingSummary.completed}</p>
                     </div>
-                    <div className="text-center p-3 bg-white/5 rounded-lg border border-red-500/20">
-                      <p className="text-sm text-red-300">ยกเลิก</p>
-                      <p className="text-2xl font-bold text-white">{bookingSummary.cancelled}</p>
+                    <div className="text-center p-2 sm:p-3 bg-white/5 rounded-lg border border-red-500/20 col-span-2 md:col-span-1">
+                      <p className="text-xs sm:text-sm text-red-300">ยกเลิก</p>
+                      <p className="text-xl sm:text-2xl font-bold text-white">{bookingSummary.cancelled}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="text-indigo-200">
+                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="text-indigo-200 w-full sm:w-auto">
                       <p className="text-sm">จำนวนคาบทั้งหมด: <span className="font-semibold text-white">{bookingSummary.userInfo.totalLessons}</span></p>
                       <p className="text-sm">ใช้ไปแล้ว: <span className="font-semibold text-white">{bookingSummary.userInfo.usedLessons}</span></p>
                       <p className="text-sm">คงเหลือ: <span className="font-semibold text-white">{bookingSummary.userInfo.remainingLessons}</span></p>
                     </div>
-                    <div className="w-64 bg-white/5 rounded-full h-2 mr-4">
+                    <div className="w-full sm:w-64 bg-white/5 rounded-full h-2">
                       <div 
                         className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full" 
                         style={{ 
@@ -615,28 +615,28 @@ const MyBookings = () => {
                     <table className="min-w-full divide-y divide-white/10">
                       <thead>
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">ครู</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">วันที่</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">เวลา</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">สถานะ</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">หักคาบเรียน</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">จองเมื่อ</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">ครู</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">วันที่</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">เวลา</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase">สถานะ</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase hidden sm:table-cell">หักคาบเรียน</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-indigo-300 uppercase hidden md:table-cell">จองเมื่อ</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/10">
                         {bookings.length > 0 ? (
                           bookings.map((booking: any) => (
                             <tr key={booking._id} className="hover:bg-white/5">
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-white">
+                              <td className="px-3 sm:px-4 py-2.5 whitespace-nowrap text-xs sm:text-sm text-white">
                                 {booking.teacher?.name || 'ไม่ระบุ'}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                              <td className="px-3 sm:px-4 py-2.5 whitespace-nowrap text-xs sm:text-sm text-indigo-200">
                                 {booking.day}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                              <td className="px-3 sm:px-4 py-2.5 whitespace-nowrap text-xs sm:text-sm text-indigo-200">
                                 {booking.startTime} - {booking.endTime}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm">
+                              <td className="px-3 sm:px-4 py-2.5 whitespace-nowrap text-xs sm:text-sm">
                                 <span className={`px-2 py-1 rounded-full text-xs
                                   ${booking.status === 'pending' ? 'bg-yellow-900/30 text-yellow-300' : ''}
                                   ${booking.status === 'confirmed' ? 'bg-green-900/30 text-green-300' : ''}
@@ -646,7 +646,7 @@ const MyBookings = () => {
                                   {booking.statusThai || getStatusText(booking.status)}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                              <td className="px-3 sm:px-4 py-2.5 whitespace-nowrap text-xs sm:text-sm text-indigo-200 hidden sm:table-cell">
                                 {booking.deductedLesson ? (
                                   <span className="text-green-300 flex items-center">
                                     <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -658,7 +658,7 @@ const MyBookings = () => {
                                   <span className="text-gray-400">-</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-indigo-200">
+                              <td className="px-3 sm:px-4 py-2.5 whitespace-nowrap text-xs sm:text-sm text-indigo-200 hidden md:table-cell">
                                 {booking.statusUpdatedAt || new Date(booking.createdAt).toLocaleDateString('th-TH')}
                               </td>
                             </tr>

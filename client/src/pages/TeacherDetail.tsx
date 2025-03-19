@@ -145,23 +145,23 @@ const TeacherDetail = () => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className={`transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             {/* Teacher info */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg">
                 <div className="flex items-center mb-6">
-                  <div className="h-20 w-20 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold">
+                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold">
                     {teacher.name.charAt(0)}
                   </div>
                   <div className="ml-4">
-                    <h2 className="text-2xl font-bold text-gray-900">{teacher.name}</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{teacher.name}</h2>
                     <p className="text-sm text-indigo-600">ครูผู้สอน</p>
                   </div>
                 </div>
                 
                 <div className="mt-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-3">รายละเอียด</h3>
-                  <div className="text-gray-600 text-base">
+                  <div className="text-gray-600 text-sm sm:text-base">
                     <p>{teacher.profileDescription}</p>
                   </div>
                 </div>
@@ -169,7 +169,7 @@ const TeacherDetail = () => {
                 <div className="mt-6">
                   <button
                     onClick={() => navigate('/teachers')}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -182,7 +182,7 @@ const TeacherDetail = () => {
 
             {/* Booking Section */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">ตารางเวลาว่าง</h3>
                 
                 {bookingSuccess && (
@@ -228,14 +228,14 @@ const TeacherDetail = () => {
                     {Object.keys(availableSlotsByDay).map(day => (
                       <div key={day} className="border-b pb-5 last:border-b-0">
                         <h3 className="text-lg font-medium text-indigo-700 mb-3">{dayTranslation[day] || day}</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                           {availableSlotsByDay[day].map(slot => (
                             <button
                               key={slot._id}
                               onClick={() => isAuthenticated && !slot.isBooked && handleSlotSelect(slot)}
                               disabled={slot.isBooked || !isAuthenticated}
                               className={`
-                                px-3 py-2 text-sm rounded-md transition-all duration-200
+                                px-3 py-3 text-sm rounded-md transition-all duration-200
                                 ${slot.isBooked 
                                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                                   : selectedSlot?._id === slot._id 
@@ -270,7 +270,7 @@ const TeacherDetail = () => {
                     </p>
                     <button
                       onClick={handleBooking}
-                      className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                      className="w-full inline-flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
                     >
                       ยืนยันการจอง
                     </button>
@@ -294,7 +294,7 @@ const TeacherDetail = () => {
                                     key={slot._id}
                                     onClick={() => handleSlotSelect(slot)}
                                     disabled={slot.isBooked}
-                                    className={`w-full flex justify-between items-center px-4 py-2 border ${
+                                    className={`w-full flex justify-between items-center px-4 py-2.5 border ${
                                       slot.isBooked 
                                         ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed' 
                                         : 'border-indigo-500 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
@@ -302,9 +302,9 @@ const TeacherDetail = () => {
                                   >
                                     <span>{slot.startTime} - {slot.endTime}</span>
                                     {slot.isBooked ? (
-                                      <span className="text-xs font-medium bg-gray-100 text-gray-800 py-1 px-2 rounded-full">จองแล้ว</span>
+                                      <span className="text-xs font-medium bg-gray-100 text-gray-800 py-1 px-2 rounded-full ml-1">จองแล้ว</span>
                                     ) : (
-                                      <span className="text-xs font-medium bg-green-100 text-green-800 py-1 px-2 rounded-full">ว่าง</span>
+                                      <span className="text-xs font-medium bg-green-100 text-green-800 py-1 px-2 rounded-full ml-1">ว่าง</span>
                                     )}
                                   </button>
                                 ))}
@@ -326,13 +326,13 @@ const TeacherDetail = () => {
                                 key={slot._id}
                                 onClick={() => handleSlotSelect(slot)}
                                 disabled={slot.isBooked}
-                                className={`w-full flex justify-between items-center px-4 py-2 border ${
+                                className={`w-full flex justify-between items-center px-4 py-3 border ${
                                   slot.isBooked 
                                     ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed' 
                                     : 'border-indigo-500 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                                 } rounded-md transition-colors duration-150`}
                               >
-                                <span>{slot.startTime} - {slot.endTime}</span>
+                                <span className="text-sm">{slot.startTime} - {slot.endTime}</span>
                                 {slot.isBooked ? (
                                   <span className="text-xs font-medium bg-gray-100 text-gray-800 py-1 px-2 rounded-full">จองแล้ว</span>
                                 ) : (

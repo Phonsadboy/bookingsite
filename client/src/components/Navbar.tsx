@@ -54,7 +54,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16 md:h-20 items-center">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <Link to="/" className={`flex items-center text-2xl font-bold transition-all duration-300 ${scrolled ? 'text-indigo-900' : 'text-white'}`}>
+              <Link to="/" className={`flex items-center text-xl md:text-2xl font-bold transition-all duration-300 ${scrolled ? 'text-indigo-900' : 'text-white'}`}>
                 <span className={`
                   px-2 py-1 rounded-lg mr-1 transition-all duration-300 
                   ${scrolled 
@@ -226,16 +226,16 @@ const Navbar = () => {
                 
                 {mobileProfileOpen && (
                   <div className={`
-                    absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg py-1 z-50 transition-all duration-300
+                    absolute right-0 top-full mt-2 w-64 rounded-lg shadow-lg py-1 z-50 transition-all duration-300
                     ${scrolled ? 'bg-white text-gray-800' : 'bg-indigo-900 text-white'}
                   `}>
-                    <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                       <div className="font-medium">{user?.username}</div>
-                      <div className="text-xs opacity-75">
+                      <div className="text-xs opacity-75 mb-1">
                         เหลือ {user?.totalLessons && user?.usedLessons !== undefined ? user.totalLessons - user.usedLessons : 0}/{user?.totalLessons || 0} คาบ
                       </div>
-                      <div className="mt-1 h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" style={{ width: `${user?.totalLessons && user?.usedLessons !== undefined ? (user.usedLessons / user.totalLessons) * 100 : 0}%` }}></div>
+                      <div className="h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" style={{ width: `${user?.totalLessons ? (user.usedLessons / user.totalLessons) * 100 : 0}%` }}></div>
                       </div>
                     </div>
                     <div className="px-2 py-2">
@@ -245,7 +245,7 @@ const Navbar = () => {
                           setMobileProfileOpen(false);
                         }}
                         className={`
-                          flex w-full items-center px-3 py-2 text-sm rounded-md transition-colors duration-200
+                          flex w-full items-center px-3 py-2.5 text-sm rounded-md transition-colors duration-200
                           ${scrolled ? 'text-red-600 hover:bg-red-50' : 'text-red-400 hover:bg-white/10'}
                         `}
                       >
@@ -262,7 +262,7 @@ const Navbar = () => {
             
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition-colors duration-300 ${
+              className={`inline-flex items-center justify-center p-2.5 rounded-md focus:outline-none transition-colors duration-300 ${
                 scrolled 
                   ? 'text-indigo-600 hover:bg-indigo-50' 
                   : 'text-white hover:bg-white/10'
@@ -289,13 +289,13 @@ const Navbar = () => {
         ${isMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}
       `}>
         <div className={`
-          relative px-2 pt-2 pb-3 space-y-1 transition-all duration-300
+          relative px-2 pt-2 pb-4 space-y-2 transition-all duration-300
           ${scrolled ? 'bg-white' : 'bg-indigo-900 bg-opacity-95 backdrop-blur-lg'}
         `}>
           <Link
             to="/teachers"
             className={`
-              block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200
+              block px-4 py-3 rounded-md text-base font-medium transition-colors duration-200
               ${isActive('/teachers') 
                 ? (scrolled ? 'bg-indigo-50 text-indigo-600' : 'bg-indigo-800 text-white') 
                 : (scrolled ? 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white')
@@ -311,7 +311,7 @@ const Navbar = () => {
               <Link
                 to="/my-bookings"
                 className={`
-                  block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200
+                  block px-4 py-3 rounded-md text-base font-medium transition-colors duration-200
                   ${isActive('/my-bookings') 
                     ? (scrolled ? 'bg-indigo-50 text-indigo-600' : 'bg-indigo-800 text-white') 
                     : (scrolled ? 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white')
@@ -326,7 +326,7 @@ const Navbar = () => {
                 <Link
                   to="/admin"
                   className={`
-                    block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200
+                    block px-4 py-3 rounded-md text-base font-medium transition-colors duration-200
                     ${isActive('/admin') 
                       ? (scrolled ? 'bg-indigo-50 text-indigo-600' : 'bg-indigo-800 text-white') 
                       : (scrolled ? 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white')
@@ -344,7 +344,7 @@ const Navbar = () => {
             <div className="px-3 py-3">
               <Link
                 to="/login"
-                className="block w-full text-center px-4 py-2 rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-base font-medium transition-colors duration-200"
+                className="block w-full text-center px-4 py-3 rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-base font-medium transition-colors duration-200"
                 onClick={() => setIsMenuOpen(false)}
               >
                 เข้าสู่ระบบ

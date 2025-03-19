@@ -50,7 +50,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 text-white">
       {/* Hero section with animated background */}
-      <div className="relative overflow-hidden pt-20 pb-24 px-4 sm:px-6 lg:px-8">
+      <div className="relative overflow-hidden pt-20 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-30"></div>
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -62,30 +62,30 @@ const Home = () => {
           <div className={`transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             <div className="text-center">
               <div className="flex justify-center items-center mb-6">
-                <div className="bg-white text-indigo-600 text-3xl font-bold px-3 py-2 rounded-lg mr-2 shadow-lg">
+                <div className="bg-white text-indigo-600 text-2xl sm:text-3xl font-bold px-3 py-2 rounded-lg mr-2 shadow-lg">
                   Brainstorm
                 </div>
-                <div className="text-4xl font-extrabold text-white">
+                <div className="text-3xl sm:text-4xl font-extrabold text-white">
                   Bookings
                 </div>
               </div>
               
-              <h1 className="mt-4 text-4xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl">
+              <h1 className="mt-4 text-3xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl">
                 <span className="block">จองเวลาเรียนได้ทุกที่</span>
                 <span className="block bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-purple-300">
                   ทุกเวลาที่ต้องการ
                 </span>
               </h1>
               
-              <p className="max-w-xl mt-6 mx-auto text-xl text-indigo-100">
+              <p className="max-w-xl mt-4 sm:mt-6 mx-auto text-base sm:text-xl text-indigo-100">
                 เชื่อมต่อกับครูผู้เชี่ยวชาญและจัดตารางเรียนตามความสะดวกของคุณได้ในไม่กี่คลิก
               </p>
               
-              <div className="mt-10 flex justify-center space-x-6">
+              <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center gap-4 sm:space-x-6">
                 {isAuthenticated ? (
                   <Link
                     to="/teachers"
-                    className="group relative inline-flex items-center justify-center px-8 py-3 font-medium rounded-full overflow-hidden bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                    className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3 font-medium rounded-full overflow-hidden bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
                   >
                     <span className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"></span>
                     <span className="relative flex items-center">
@@ -98,7 +98,7 @@ const Home = () => {
                 ) : (
                   <Link
                     to="/login"
-                    className="group relative inline-flex items-center justify-center px-8 py-3 font-medium rounded-full overflow-hidden bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                    className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3 font-medium rounded-full overflow-hidden bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
                   >
                     <span className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"></span>
                     <span className="relative flex items-center">
@@ -112,7 +112,7 @@ const Home = () => {
                 
                 <Link
                   to={isAuthenticated ? "/my-bookings" : "/teachers"}
-                  className="group relative inline-flex items-center justify-center px-8 py-3 font-medium rounded-full overflow-hidden bg-indigo-100 text-indigo-800 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3 font-medium rounded-full overflow-hidden bg-indigo-100 text-indigo-800 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
                 >
                   <span className="absolute inset-0 w-full h-full bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"></span>
                   <span className="relative flex items-center">
@@ -122,21 +122,21 @@ const Home = () => {
               </div>
               
               {isAuthenticated && user && (
-                <div className="mt-16 max-w-lg mx-auto p-1 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 shadow-xl transform transition duration-500 hover:scale-105">
-                  <div className="bg-white rounded-xl p-6 backdrop-blur-xl bg-opacity-90">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">สถานะคอร์สเรียนของคุณ</h3>
+                <div className="mt-12 sm:mt-16 max-w-lg mx-auto p-1 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 shadow-xl transform transition duration-500 hover:scale-105">
+                  <div className="bg-white rounded-xl p-4 sm:p-6 backdrop-blur-xl bg-opacity-90">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">สถานะคอร์สเรียนของคุณ</h3>
                     
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-4 rounded-lg text-center text-white">
-                        <div className="text-2xl font-bold">{user.usedLessons}</div>
+                    <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
+                      <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-3 sm:p-4 rounded-lg text-center text-white">
+                        <div className="text-lg sm:text-2xl font-bold">{user.usedLessons}</div>
                         <div className="text-xs font-medium mt-1">ใช้ไปแล้ว</div>
                       </div>
-                      <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-lg text-center text-white">
-                        <div className="text-2xl font-bold">{user.totalLessons - user.usedLessons}</div>
+                      <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 sm:p-4 rounded-lg text-center text-white">
+                        <div className="text-lg sm:text-2xl font-bold">{user.totalLessons - user.usedLessons}</div>
                         <div className="text-xs font-medium mt-1">คงเหลือ</div>
                       </div>
-                      <div className="bg-gradient-to-br from-pink-500 to-indigo-500 p-4 rounded-lg text-center text-white">
-                        <div className="text-2xl font-bold">{user.totalLessons}</div>
+                      <div className="bg-gradient-to-br from-pink-500 to-indigo-500 p-3 sm:p-4 rounded-lg text-center text-white">
+                        <div className="text-lg sm:text-2xl font-bold">{user.totalLessons}</div>
                         <div className="text-xs font-medium mt-1">ทั้งหมด</div>
                       </div>
                     </div>
@@ -177,22 +177,22 @@ const Home = () => {
       </div>
       
       {/* Features section with animated cards */}
-      <div className="relative py-24 px-4 sm:px-6 lg:px-8">
+      <div className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-800 to-purple-900"></div>
         
         <div className="relative max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-base text-pink-400 font-semibold tracking-wide uppercase">คุณสมบัติ</h2>
-            <p className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">
+            <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-white sm:text-4xl">
               ทำไมต้องเลือกใช้บริการของเรา
             </p>
-            <p className="mt-4 max-w-2xl text-lg text-indigo-200 mx-auto">
+            <p className="mt-4 max-w-2xl text-base sm:text-lg text-indigo-200 mx-auto">
               ระบบจองคอร์สเรียนออนไลน์ที่ออกแบบมาเพื่อประสบการณ์การใช้งานที่ดีที่สุดสำหรับคุณ
             </p>
           </div>
 
           {/* Feature cards */}
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
+          <div className="mt-12 sm:mt-16 grid gap-6 sm:gap-8 md:grid-cols-3">
             {features.map((feature, index) => (
               <div 
                 key={index}
@@ -208,15 +208,15 @@ const Home = () => {
                 onMouseEnter={() => setActiveFeature(index)}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white to-white opacity-5"></div>
-                <div className="relative p-8">
+                <div className="relative p-6 sm:p-8">
                   <div className={`
-                    inline-flex items-center justify-center p-3 bg-white bg-opacity-10 rounded-xl text-white mb-5
+                    inline-flex items-center justify-center p-3 bg-white bg-opacity-10 rounded-xl text-white mb-4 sm:mb-5
                     ${activeFeature === index ? 'animate-pulse' : ''}
                   `}>
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-bold text-white">{feature.title}</h3>
-                  <p className="mt-4 text-indigo-100">
+                  <h3 className="text-lg sm:text-xl font-bold text-white">{feature.title}</h3>
+                  <p className="mt-3 sm:mt-4 text-sm sm:text-base text-indigo-100">
                     {feature.description}
                   </p>
                 </div>
@@ -229,10 +229,10 @@ const Home = () => {
           </div>
           
           {/* Call to action */}
-          <div className="mt-20 text-center">
+          <div className="mt-16 sm:mt-20 text-center">
             <Link
               to={isAuthenticated ? "/teachers" : "/login"}
-              className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 shadow-xl transform transition-all duration-300 hover:scale-105"
+              className="inline-flex items-center justify-center px-6 sm:px-8 py-3 text-base font-medium rounded-md text-white bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 shadow-xl transform transition-all duration-300 hover:scale-105"
             >
               {isAuthenticated ? "ค้นหาครูตอนนี้" : "สมัครใช้งานตอนนี้"}
               <svg className="ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
